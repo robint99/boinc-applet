@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+   <schema id="org.mate.panel.applet.BoincMonitor">
+     <key type="i" name="tasks-to-display">
+      <default>1</default>
+      <summary>Number of tasks to show in the panel</summary>
+      <description>Number of tasks whose completion status is displayed in the panel. Can be between 0 (no tasks are displayed) and 8.</description>
+    </key>
+    <key type="i" name="task-update-interval">
+      <default>1</default>
+      <summary>How often (in minutes) task details are updated</summary>
+      <description>How often (in minutes) the task details in the panel are updated. Can be between 1 and 60 minutes.</description>
+    </key>
+   <key type="i" name="sundries-update-interval">
+      <default>1</default>
+      <summary>How often (in hours) user credit details and BOINC notices are updated</summary>
+      <description>How often (in hours) user credit totals and BOINC notices are updated. Can be between 1 and 8 hours.</description>
+    </key>
+   <key type="b" name="show-total-uc">
+      <default>false</default>
+      <summary>Whether the number of the user's total BOINC credits are displayed in the panel</summary>
+      <description></description>
+    </key>
+    <key type="b" name="show-today-uc">
+      <default>false</default>
+      <summary>Whether the number the today number of credits earned today are displayed in the panel</summary>
+      <description></description>
+    </key>
+   </schema>
+</schemalist>

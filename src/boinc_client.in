@@ -1,0 +1,297 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Python class to encapsulate communication with and returning status from boinc clients
+
+"""
+Provide an interface to query the Boinc client and return the results
+
+Communicate with the client via rpc
+Parse the returned XML and present the results in a more friendly way
+"""
+
+import socket
+#from xml.etree import ElementTree
+import operator
+import datetime
+from html.parser import HTMLParser
+import collections
+
+import gettext
+gettext.bindtextdomain("boinc_monitor")
+gettext.textdomain("boinc_monitor")
+_ = gettext.gettext
+
+import rpc
+
+BoincProject = collections.namedtuple("BoincProject",
+                                      ["project_name", "project_url"])
+BoincNotice = collections.namedtuple("BoincNotice",
+                                     ["title", "time_received", "project", "description"])
+BoincResult = collections.namedtuple("BoincResult",
+                                     ["taskname", "active", "project", "slot", "fraction_done"])
+
+
+class MLStripper(HTMLParser):
+    """
+    class to parse HTML and return the bare text, minus all tags
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        """
+        return the bare text
+        """
+
+        return "".join(self.fed)
+
+
+class BoincClient(object):
+    """
+    class to query the Boinc client and return the results
+    """
+
+    def __init__(self):
+        """
+        declare attributes
+        """
+
+        self.__projects = []
+        self.__task_results = []
+        self.notices = []
+        self.init_stats()
+        self.__rpc = None
+        self.stat_date = 0
+        self.stat_total_uc = 0.0
+        self.stat_total_hc = 0.0
+        self.stat_avg_uc = 0.0
+        self.stat_avg_hc = 0.0
+        self.stat_today_uc = 0.0
+        self.stat_today_hc = 0.0
+
+    def init_stats(self):
+        """
+        initialise data relating to user statistics
+        """
+        self.stat_date = datetime.date.today()
+        self.stat_total_uc = 0.0
+        self.stat_total_hc = 0.0
+        self.stat_avg_uc = 0.0
+        self.stat_avg_hc = 0.0
+        self.stat_today_uc = 0.0
+        self.stat_today_hc = 0.0
+
+    def client_is_online(self):
+        """
+        send a simple message to the client to test whether or not it is online
+        """
+
+        try:
+            self.__rpc = rpc.Rpc(text_output=False)
+            self.__rpc.call('<get_message_count/>')
+
+        except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            return False
+
+        return True
+
+    def get_num_task_results(self):
+        """
+        return the number of tasks the is working on
+        Note: this includes pending/stopped tasks
+        """
+        return len(self.__task_results)
+
+    def get_task_fraction_done(self, task_num):
+        """
+        return the specified tasks's fraction done (0-1)
+        """
+        return self.__task_results[task_num].fraction_done
+
+    def get_task_state(self, task_num):
+        """
+        return the state ("Running" or "Stopped") for the specified task
+        """
+
+        if self.__task_results[task_num].active:
+            return _("Running")
+        else:
+            return _("Stopped")
+
+    def get_task_project(self, task_num):
+        """
+        return the name of the project the specified task is related to
+        """
+        for project in self.__projects:
+            if project.project_url == self.__task_results[task_num].project:
+                return project.project_name
+
+        return _("Unknown")
+
+    def get_task_name(self, task_num):
+        """
+        return the specified task's name
+        """
+
+        return self.__task_results[task_num].taskname
+
+    def get_projects(self):
+        """
+        get a list of all the Boinc projets the user is subscribed to
+        """
+
+        self.__rpc = rpc.Rpc(text_output=False)
+
+        try:
+            projects_tree_root = self.__rpc.call("<get_project_status/>")
+
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout):
+            return False
+
+        # parse the xml return and fill the __projects list accordingly
+        self.__projects = []
+        for project in projects_tree_root.findall("project"):
+            the_project = BoincProject(project.find("project_name").text,
+                                       project.find("master_url").text)
+
+            self.__projects.append(the_project)
+
+        return True
+
+    def read_results(self):
+        """
+        get a list of all of the tasks (active or stopped) the client is currently
+        working on
+        """
+        self.__rpc = rpc.Rpc(text_output=False)
+
+        try:
+            task_tree_root = self.__rpc.call("<get_results/>")
+
+        except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            return False
+
+        self.__task_results = []
+        for task_result in task_tree_root.findall("result"):
+            taskname = task_result.find("wu_name").text
+            project = task_result.find("project_url").text
+            active_task = task_result.find("active_task")
+            if active_task is not None:
+                taskactive = True
+                slot = int(active_task.find('slot').text)
+                fraction_done = float(active_task.find('fraction_done').text)*100
+            else:
+                taskactive = False
+                slot = 0
+                fraction_done = 0
+
+            task = BoincResult(taskname, taskactive, project, slot, fraction_done)
+
+            self.__task_results.append(task)
+
+        # sort the results list according to the 'slot' value
+        self.__task_results.sort(key=operator.attrgetter('slot'), reverse=True)
+
+        return True
+
+    def read_user_credits(self):
+        """
+        read the user's credit info from the client
+        """
+        self.__rpc = rpc.Rpc(text_output=False)
+
+        self.init_stats()
+
+        try:
+            stats_tree_root = self.__rpc.call("<get_statistics/>")
+
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout):
+            return False
+
+        if stats_tree_root is not None:
+
+            # amalgamate all project credits into a single total
+            for project in stats_tree_root.findall("project_statistics"):
+                daily_stats = project.findall("daily_statistics")
+
+                # the latest date recorded is in the final element
+                today_stats = daily_stats[len(daily_stats)-1]
+                self.stat_total_uc += float(today_stats.find("user_total_credit").text)
+                self.stat_total_hc += float(today_stats.find("host_total_credit").text)
+                self.stat_avg_uc += float(today_stats.find("user_expavg_credit").text)
+                self.stat_avg_hc += float(today_stats.find("host_expavg_credit").text)
+
+                # get the total credits so far today by subtracting yesterday's totals
+                # (if any) from today's
+                if len(daily_stats) >= 1:
+                    yesterday_stats = daily_stats[len(daily_stats)-2]
+                    self.stat_today_uc = self.stat_total_uc - \
+                                         float(yesterday_stats.find("user_total_credit").text)
+                    self.stat_today_hc = self.stat_total_hc - \
+                                         float(yesterday_stats.find("host_total_credit").text)
+                else:
+                    self.stat_today_uc = self.stat_total_uc
+                    self.stat_today_hc = self.stat_total_hc
+
+        return True
+
+    def num_notices(self):
+        """
+        return the number of project notices available to the user
+        """
+        return len(self.notices)
+
+    def read_notices(self):
+        """
+        read the project notices available to the user
+        """
+        self.__rpc = rpc.Rpc(text_output=False)
+
+        # get all notices - returns true if this is the first time that notices have been read
+        # or new notices have been received, false if there are no changes or an error occurred
+
+        try:
+            notices_tree_root = self.__rpc.call('<get_notices><seqno>0</seqno></get_notices>')
+
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout):
+            return False
+
+        ret_val = len(notices_tree_root.findall("notice")) != len(self.notices)
+        if ret_val:
+            self.notices = []
+            for notice in notices_tree_root.findall("notice"):
+
+                # the notice can contain html, so remove the tags and present the user with
+                # the bare text
+                stripper = MLStripper()
+                stripper.feed(notice.find("description").text)
+                description = stripper.get_data()
+
+                arrival_time_str = notice.find("arrival_time").text
+                arrival_time = datetime.datetime.fromtimestamp(float(arrival_time_str))
+                new_notice = BoincNotice(notice.find("title").text,
+                                         arrival_time,
+                                         notice.find("project_name").text,
+                                         description)
+
+                self.notices.append(new_notice)
+
+        return ret_val
+
+def main():
+    """
+    debugging code can go here
+    """
+    return
+
+if __name__ == "__main__":
+    main()

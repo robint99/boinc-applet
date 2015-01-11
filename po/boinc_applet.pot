@@ -1,0 +1,186 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-01-10 11:22+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/boinc_client.py:126 src/boinc_applet.py:517
+msgid "Running"
+msgstr ""
+
+#: src/boinc_client.py:128 src/boinc_applet.py:266
+msgid "Stopped"
+msgstr ""
+
+#: src/boinc_client.py:138
+msgid "Unknown"
+msgstr ""
+
+#: src/rpc.py:118
+msgid "No data from socket"
+msgstr ""
+
+#: src/boinc_applet.py:177
+msgid "_Preferences"
+msgstr ""
+
+#: src/boinc_applet.py:177 src/boinc_applet.py:185 src/boinc_applet.py:682
+msgid "Preferences"
+msgstr ""
+
+#: src/boinc_applet.py:179 src/boinc_applet.py:180 src/boinc_applet.py:186
+msgid "Detailed client status..."
+msgstr ""
+
+#: src/boinc_applet.py:182 src/boinc_applet.py:188
+msgid "About..."
+msgstr ""
+
+#: src/boinc_applet.py:209
+msgid "Boinc Monitor"
+msgstr ""
+
+#: src/boinc_applet.py:257
+msgid "Boinc Monitor - Boinc is not running"
+msgstr ""
+
+#: src/boinc_applet.py:262 src/boinc_applet.py:852
+msgid "Boinc client - not running"
+msgstr ""
+
+#: src/boinc_applet.py:285 src/boinc_applet.py:854
+msgid "Boinc client - running"
+msgstr ""
+
+#: src/boinc_applet.py:381
+msgid "DC:"
+msgstr ""
+
+#: src/boinc_applet.py:397
+msgid "TC:"
+msgstr ""
+
+#: src/boinc_applet.py:429
+msgid "Received - "
+msgstr ""
+
+#: src/boinc_applet.py:575
+msgid "An applet to monitor the progress of BOINC tasks."
+msgstr ""
+
+#: src/boinc_applet.py:577
+msgid "This program comes with ABSOLUTELY NO WARRENTY."
+msgstr ""
+
+#: src/boinc_applet.py:580
+msgid "See the"
+msgstr ""
+
+#: src/boinc_applet.py:583
+msgid "GNU General Public License, version 3 or later"
+msgstr ""
+
+#: src/boinc_applet.py:584
+msgid "for details"
+msgstr ""
+
+#: src/boinc_applet.py:698 src/boinc_applet.py:701
+msgid "Display"
+msgstr ""
+
+#: src/boinc_applet.py:706
+msgid "Number of tasks to display:"
+msgstr ""
+
+#: src/boinc_applet.py:725
+msgid "Display today's credit"
+msgstr ""
+
+#: src/boinc_applet.py:730
+msgid "Display total credit"
+msgstr ""
+
+#: src/boinc_applet.py:741 src/boinc_applet.py:745
+msgid "Updates"
+msgstr ""
+
+#: src/boinc_applet.py:750
+msgid "Task update interval (minutes):"
+msgstr ""
+
+#: src/boinc_applet.py:772
+msgid "User credits/project notices update interval (hours):"
+msgstr ""
+
+#: src/boinc_applet.py:856
+msgid "Close"
+msgstr ""
+
+#: src/boinc_applet.py:889
+msgid "State"
+msgstr ""
+
+#: src/boinc_applet.py:895
+msgid "Complete"
+msgstr ""
+
+#: src/boinc_applet.py:901
+msgid "Project"
+msgstr ""
+
+#: src/boinc_applet.py:907
+msgid "Task name"
+msgstr ""
+
+#: src/boinc_applet.py:921
+msgid "Tasks"
+msgstr ""
+
+#: src/boinc_applet.py:931
+msgid "Date:"
+msgstr ""
+
+#: src/boinc_applet.py:951
+msgid "User credit today: "
+msgstr ""
+
+#: src/boinc_applet.py:962
+msgid "Host credit today: "
+msgstr ""
+
+#: src/boinc_applet.py:980
+msgid "User Daily Avg: "
+msgstr ""
+
+#: src/boinc_applet.py:991
+msgid "Host Daily Avg: "
+msgstr ""
+
+#: src/boinc_applet.py:1009
+msgid "User total credit: "
+msgstr ""
+
+#: src/boinc_applet.py:1020
+msgid "Host total credit: "
+msgstr ""
+
+#: src/boinc_applet.py:1032
+msgid "Statistics"
+msgstr ""
+
+#: src/boinc_applet.py:1041
+msgid "Notices"
+msgstr ""

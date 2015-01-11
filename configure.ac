@@ -1,0 +1,10 @@
+AC_INIT([Boinc Applet], [0.7])
+
+AM_INIT_AUTOMAKE
+AM_PATH_PYTHON([3.0])
+
+GLIB_GSETTINGS
+
+AC_CONFIG_FILES([Makefile  src/Makefile])
+
+AC_OUTPUT
