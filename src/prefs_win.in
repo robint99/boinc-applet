@@ -1,0 +1,285 @@
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+
+Provide a configuration dialog so that the user can specify how many tasks
+have their status displayed in the panel, also whether or not the
+user's BOINC credits are shown, and how often the information is updated
+Copyright (C) 1997-2003 Free Software Foundation, Inc.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301, USA.
+
+
+Author:
+    Robin Thompson
+
+"""
+
+import gettext
+gettext.bindtextdomain("boinc_monitor")
+gettext.textdomain("boinc_monitor")
+_ = gettext.gettext
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk
+
+class PrefsWindow(Gtk.Window):
+
+    """
+
+    provide the prefernces window fori theboinc monitor applet
+
+    allow the applet to provide a callback for the Ok button press event
+    so that it can be notified when the preferences change
+    """
+
+    def __init__(self, ok_callback):
+        """
+        create the window and its contents
+        """
+
+        super().__init__(title="Preferences")
+
+        self.connect("delete-event", self.win_delete_event)
+        self.set_border_width(5)
+        self.__vbox = Gtk.VBox()
+        self.__vbox.set_spacing(2)
+        self.__cancel_btn = Gtk.Button(label="Cancel", stock=Gtk.STOCK_CANCEL)
+        self.__cancel_btn.connect("button-press-event",
+                                  self.win_cancel_button_press)
+        self.__ok_btn = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
+        self.__ok_btn.connect("button-press-event", ok_callback)
+        self.__hbbx = Gtk.HButtonBox()
+        self.__hbbx.set_spacing(4)
+        self.__hbbx.set_layout(Gtk.ButtonBoxStyle.END)
+        self.__hbbx.pack_start(self.__ok_btn, False, False, 4)
+        self.__hbbx.pack_start(self.__cancel_btn, False, False, 4)
+
+        self.__frame_display = Gtk.Frame(label=_("Display"))
+        lbl = self.__frame_display.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>" + _("Display") + "</b>")
+
+        self.__frame_display.set_shadow_type(Gtk.ShadowType.NONE)
+        self.__table_display = Gtk.Table(rows=3, columns=2, homogeneous=False)
+
+        self.__lbl_numtasks = Gtk.Label(_("Number of tasks to display:"))
+        self.__table_display.attach(self.__lbl_numtasks, 0, 1, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    4, 2)
+        self.__lbl_numtasks.set_alignment(0.03, 0.5)
+
+        self.__spinbtn_tasks = Gtk.SpinButton()
+        self.__spinbtn_adj = Gtk.Adjustment(lower=0, upper=8, step_increment=1,
+                                            page_increment=1)
+        self.__spinbtn_tasks.set_adjustment(self.__spinbtn_adj)
+        self.__spinbtn_tasks.set_numeric(True)
+        self.__spinbtn_tasks.set_wrap(True)
+        self.__spinbtn_tasks.set_max_length(1)
+        self.__spinbtn_tasks.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+
+        self.__table_display.attach(self.__spinbtn_tasks, 1, 2, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 4)
+
+        self.__cbc_today_uc = Gtk.CheckButton(_("Display today's credit"))
+        self.__table_display.attach(self.__cbc_today_uc, 0, 2, 1, 2,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+
+        self.__cbc_total_uc = Gtk.CheckButton(_("Display total credit"))
+        self.__table_display.attach(self.__cbc_total_uc, 0, 2, 2, 3,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+
+        self.__frame_display_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_display_align.set_padding(0, 0, 12, 0)
+        self.__frame_display_align.add(self.__table_display)
+        self.__frame_display.add(self.__frame_display_align)
+
+        frame_title = _("Updates")
+        self.__frame_updates = Gtk.Frame(label=frame_title)
+        lbl = self.__frame_updates.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>" + _("Updates")+ "</b>")
+
+        self.__frame_updates.set_shadow_type(Gtk.ShadowType.NONE)
+        self.__table_updates = Gtk.Table(rows=2, columns=2, homogeneous=False)
+
+        self.__lbl_task_interval = Gtk.Label(_("Task update interval (minutes):"))
+        self.__table_updates.attach(self.__lbl_task_interval, 0, 1, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__lbl_task_interval.set_alignment(0.03, 0.5)
+
+        self.__spinbtn_task_interval = Gtk.SpinButton()
+        self.__spinbtn_task_adj = Gtk.Adjustment(lower=1, upper=60,
+                                                 step_increment=1,
+                                                 page_increment=1)
+
+        self.__spinbtn_task_interval.set_adjustment(self.__spinbtn_task_adj)
+        self.__spinbtn_task_interval.set_numeric(True)
+        self.__spinbtn_task_interval.set_wrap(True)
+        self.__spinbtn_task_interval.set_max_length(2)
+        self.__spinbtn_task_interval.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+
+        self.__table_updates.attach(self.__spinbtn_task_interval, 1, 2, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+
+        self.__lbl_sundries_interval = \
+            Gtk.Label(_("User credits/project notices update interval (hours):"))
+        self.__table_updates.attach(self.__lbl_sundries_interval, 0, 1, 1, 2,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__lbl_sundries_interval.set_alignment(0.03, 0.5)
+
+        self.__spinbtn_lp_interval = Gtk.SpinButton()
+        self.__spinbtn_si_adj = Gtk.Adjustment(lower=1, upper=8,
+                                               step_increment=1,
+                                               page_increment=1)
+
+        self.__spinbtn_lp_interval.set_adjustment(self.__spinbtn_si_adj)
+        self.__spinbtn_lp_interval.set_numeric(True)
+        self.__spinbtn_lp_interval.set_wrap(True)
+        self.__spinbtn_lp_interval.set_max_length(1)
+        self.__spinbtn_lp_interval.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
+
+        self.__table_updates.attach(self.__spinbtn_lp_interval,
+                                    1, 2, 1, 2, Gtk.AttachOptions.FILL,
+                                    Gtk.AttachOptions.SHRINK, 2, 2)
+
+        self.__frame_updates_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_updates_align.set_padding(0, 0, 12, 0)
+        self.__frame_updates_align.add(self.__table_updates)
+        self.__frame_updates.add(self.__frame_updates_align)
+
+        self.__vbox.pack_start(self.__frame_display, True, True, 4)
+        self.__vbox.pack_start(self.__frame_updates, True, True, 4)
+        self.__vbox.pack_start(self.__hbbx, False, False, 0)
+
+        self.connect("delete-event", self.win_delete_event)
+
+        self.__spinbtn_tasks.set_value(2)
+
+        self.add(self.__vbox)
+
+    def win_delete_event(self, widget, event, data=None):
+        """
+        callback for the preferences window delete event
+
+        do not delete the window, hide it instead so that it can be shown again
+        later if needed
+        """
+        self.hide()
+        return True
+
+    def win_cancel_button_press(self, widget, event):
+        """
+        callback for the preferences window Cancel button press
+
+        hide the window
+        """
+
+        self.hide()
+
+    def get_num_tasks(self):
+        """
+        get the number of tasks to display in the panel
+        """
+        return self.__spinbtn_tasks.get_value()
+
+    def set_num_tasks(self, value):
+        """
+        set the number of tasks to display in panel
+        """
+        self.__spinbtn_tasks.set_value(value)
+
+    num_tasks = property(get_num_tasks, set_num_tasks)
+
+    def get_show_total_uc(self):
+        """
+        get the number of tasks to display in the panel
+        """
+        return self.__cbc_total_uc.get_active()
+
+    def set_show_total_uc(self, value):
+        """
+        set the number of tasks to display in panel
+        """
+        self.__cbc_total_uc.set_active(value)
+
+    show_total_uc = property(get_show_total_uc, set_show_total_uc)
+
+    def get_show_today_uc(self):
+        """
+        get the number of tasks to display in the panel
+        """
+        return self.__cbc_today_uc.get_active()
+
+    def set_show_today_uc(self, value):
+        """
+        set the number of tasks to display in panel
+        """
+        self.__cbc_today_uc.set_active(value)
+
+    show_today_uc = property(get_show_today_uc, set_show_today_uc)
+
+    def get_task_interval(self):
+        """
+        get the task update interval
+        """
+        return self.__spinbtn_task_interval.get_value()
+
+    def set_task_interval(self, value):
+        """
+        set the task update interval
+        """
+        self.__spinbtn_task_interval.set_value(value)
+
+    task_interval = property(get_task_interval, set_task_interval)
+
+    def get_lp_interval(self):
+        """
+        get the low priority update interval
+        """
+        return self.__spinbtn_lp_interval.get_value()
+
+    def set_lp_interval(self, value):
+        """
+        set the low priority update interval
+        """
+        self.__spinbtn_lp_interval.set_value(value)
+
+    lp_interval = property(get_lp_interval, set_lp_interval)
+
+
+def main():
+    """
+    main function - debugging code goes here
+    """
+    return
+
+if __name__ == "__main__":
+    main()

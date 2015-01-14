@@ -1,6 +1,7 @@
 SUBDIRS =
 
-applet_SCRIPTS = boinc_applet.py boinc_client.py rpc.py
+applet_SCRIPTS = boinc_applet.py boinc_client.py rpc.py about_win.py \
+		 status_win.py prefs_win.py
 appletdir = $(libexecdir)
 
 APPLET_LOCATION = $(libexecdir)/boinc_applet.py
@@ -59,26 +60,40 @@ rpc.py: rpc.in Makefile
 	$(do_substitution) < $(srcdir)/rpc.in > rpc.py
 	chmod +x rpc.py
 
+
+about_win.py: about_win.in Makefile
+	$(do_substitution) < $(srcdir)/about_win.in > about_win.py
+	chmod +x about_win.py
+
+status_win.py: status_win.in Makefile
+	$(do_substitution) < $(srcdir)/status_win.in > status_win.py
+	chmod +x status_win.py
+
+prefs_win.py: prefs_win.in Makefile
+	$(do_substitution) < $(srcdir)/prefs_win.in > prefs_win.py
+	chmod +x prefs_win.py
+
 applet_PYTHON = \
 		     boinc_applet.py \
 		     boinc_client.py \
-		     rpc.py
+		     rpc.py \
+		     about_win.py \
+		     status_win.py \
+		     prefs_win.py
+
 install-data-hook:
 # TODO: find a better way of coping with this
 #  move the .mate-panel-applet file to /usr/share/mate-panel/applets since it doesn't seem to work
 # in /usr/local/share/mate-panel/applets
 	mv $(appletsdir)/org.mate.panel.BoincMonitorApplet.mate-panel-applet /usr/share/mate-panel/applets/
 
-install-exec-hook:
-#TODO: find a better way of doing this as well
-#install and compile the settings schema
-#	cp $(srcdir)/org.mate.panel.applet.BoincMonitor.gschema.xml /usr/share/glib-2.0/schemas
-#	glib-compile-schemas /usr/share/glib-2.0/schemas/
-
 CLEANFILES = $(applet_SCRIPTS)
 EXTRA_DIST = $(srcdir)/boinc_applet.in \
 	     $(srcdir)/ boinc_client.in \
 	     $(srcdir)/rpc.in \
+	     $(srcdir)/about_win.in \
+	     status_win.in \
+	     prefs_win.in \
 	     $(image_DATA) \
 	     $(srcdir)/org.mate.panel.applet.BoincMonitor.gschema.xml \
 	     $(applets_in_files) \

@@ -1,0 +1,3 @@
+10/01/2015 V0.7	- 	Initial commit
+14/01/2015 V0.71-	Moved code relating to status, about and preference
+			windows into their own modules

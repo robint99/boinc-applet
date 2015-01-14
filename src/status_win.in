@@ -1,0 +1,357 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+
+Provide a status dialog to show the status of all current and pending BOINC
+tasks, the user's credits earned and any project notices recieved
+
+
+Copyright (C) 1997-2003 Free Software Foundation, Inc.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301, USA.
+
+
+Author:
+    Robin Thompson
+
+"""
+
+import gettext
+gettext.bindtextdomain("boinc_monitor")
+gettext.textdomain("boinc_monitor")
+_ = gettext.gettext
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+import gi
+gi.require_version("Gtk", "2.0")
+from gi.repository import Gtk, Pango
+
+class StatusWindow(Gtk.Window):
+    """
+    Provide the status window for the boinc monitor applet
+
+    Show the status of all running and pending tasks
+    Show the user and host credit details
+    Show project notices
+
+    Provide functions allowing the applet to modify these as and  when required
+    """
+
+
+    def __init__(self):
+
+        """
+        create the window and its contents
+        """
+
+        super().__init__(title="")
+
+        self.__button = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
+        self.__button.connect("button-press-event", self.win_button_press)
+        self.connect("delete-event", self.win_delete_event)
+        self.set_border_width(5)
+        self.__vbox = Gtk.VBox()
+        self.__vbox.set_spacing(2)
+        self.__hbx = Gtk.HButtonBox()
+        self.__hbx.set_layout(Gtk.ButtonBoxStyle.END)
+        self.__hbx.pack_start(self.__button, False, False, 4)
+
+        self.__notebook = Gtk.Notebook()
+        self.__vbox.pack_start(self.__notebook, True, True, 4)
+        self.__vbox.pack_start(self.__hbx, True, True, 0)
+
+        #initialise the treeview and liststore
+        self.__tree_view = Gtk.TreeView()
+
+        # task num, state, %complete, project, task name
+        self.__list_store = Gtk.ListStore(str, str, str, str, str)
+
+        self.__slot_renderer = Gtk.CellRendererText()
+        self.__state_renderer = Gtk.CellRendererText()
+        self.__fd_renderer = Gtk.CellRendererText()
+        self.__project_renderer = Gtk.CellRendererText()
+        self.__name_renderer = Gtk.CellRendererText()
+
+        # create columns for the treeview
+        self.__col_slot = Gtk.TreeViewColumn("",
+                                             self.__slot_renderer,
+                                             text=0)
+        self.__col_slot.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_slot.set_fixed_width(30)
+
+        self.__col_state = Gtk.TreeViewColumn(_("State"),
+                                              self.__state_renderer,
+                                              text=1)
+        self.__col_state.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_state.set_fixed_width(75)
+
+        self.__col_fraction_done = Gtk.TreeViewColumn(_("Complete"),
+                                                      self.__fd_renderer,
+                                                      markup=2)
+        self.__col_fraction_done.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_fraction_done.set_fixed_width(75)
+
+        self.__col_project = Gtk.TreeViewColumn(_("Project"),
+                                                self.__project_renderer,
+                                                text=3)
+        self.__col_project.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_project.set_fixed_width(200)
+
+        self.__col_task_name = Gtk.TreeViewColumn(_("Task name"),
+                                                  self.__name_renderer,
+                                                  text=4)
+        self.__col_task_name.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        self.__col_task_name.set_fixed_width(200)
+
+        # add the columns
+        self.__tree_view.set_model(self.__list_store)
+        self.__tree_view.append_column(self.__col_slot)
+        self.__tree_view.append_column(self.__col_state)
+        self.__tree_view.append_column(self.__col_fraction_done)
+        self.__tree_view.append_column(self.__col_project)
+        self.__tree_view.append_column(self.__col_task_name)
+
+        self.__notebook.append_page(self.__tree_view, Gtk.Label(_("Tasks")))
+
+        self.__table_stats = Gtk.Table(rows=11, columns=2, homogeneous=False)
+        self.__table_stats.attach(Gtk.Label(""), 0, 1, 0, 1,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(Gtk.Label(""), 1, 2, 0, 1,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_data_col = Gtk.Label("<u>" + _("Date:") + "</u>")
+        self.__lbl_data_col.set_use_markup(True)
+        self.__table_stats.attach(self.__lbl_data_col, 0, 1, 1, 2,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__lbl_data_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_date = Gtk.Label("")
+        self.__lbl_stat_date.set_alignment(0.05, 0.5)
+        self.__lbl_stat_date.set_use_markup(True)
+        self.__table_stats.attach(self.__lbl_stat_date, 1, 2, 1, 2,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__table_stats.attach(Gtk.Label(""), 0, 1, 2, 3,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(Gtk.Label(""), 1, 2, 2, 3,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_uct_col = Gtk.Label(_("User credit today: "))
+        self.__lbl_uct_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_today_uc = Gtk.Label("0.00")
+        self.__lbl_stat_today_uc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_uct_col,
+                                  0, 1, 3, 4, Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_today_uc, 1, 2, 3, 4,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_hct_col = Gtk.Label(_("Host credit today: "))
+        self.__lbl_hct_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_today_hc = Gtk.Label("0.00")
+        self.__lbl_stat_today_hc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_hct_col,
+                                  0, 1, 4, 5, Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_today_hc, 1, 2, 4, 5,
+                                  Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__table_stats.attach(Gtk.Label(""), 0, 1, 5, 6,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(Gtk.Label(""), 1, 2, 5, 6,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_title_avg_uc_col = Gtk.Label(_("User Daily Avg: "))
+        self.__lbl_title_avg_uc_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_avg_uc = Gtk.Label("0.00")
+        self.__lbl_stat_avg_uc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_title_avg_uc_col, 0, 1, 6, 7,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_avg_uc, 1, 2, 6, 7,
+                                  Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_title_avg_hc_col = Gtk.Label(_("Host Daily Avg: "))
+        self.__lbl_title_avg_hc_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_avg_hc = Gtk.Label("0.00")
+        self.__lbl_stat_avg_hc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_title_avg_hc_col, 0, 1, 7, 8,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_avg_hc, 1, 2, 7, 8,
+                                  Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__table_stats.attach(Gtk.Label(""), 0, 1, 8, 9,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(Gtk.Label(""), 1, 2, 8, 9,
+                                  Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_total_uc_col = Gtk.Label(_("User total credit: "))
+        self.__lbl_total_uc_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_total_uc = Gtk.Label("0.00")
+        self.__lbl_stat_total_uc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_total_uc_col,
+                                  0, 1, 9, 10, Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_total_uc, 1, 2, 9, 10,
+                                  Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__lbl_total_hc_col = Gtk.Label(_("Host total credit: "))
+        self.__lbl_total_hc_col.set_alignment(0.03, 0.5)
+        self.__lbl_stat_total_hc = Gtk.Label("0.00")
+        self.__lbl_stat_total_hc.set_alignment(0.05, 0.5)
+        self.__table_stats.attach(self.__lbl_total_hc_col,
+                                  0, 1, 10, 11, Gtk.AttachOptions.FILL,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+        self.__table_stats.attach(self.__lbl_stat_total_hc, 1, 2, 10, 11,
+                                  Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
+                                  Gtk.AttachOptions.SHRINK, 0, 0)
+
+        self.__notebook.append_page(self.__table_stats,
+                                    Gtk.Label(_("Statistics")))
+
+        self.__scrolled_win = Gtk.ScrolledWindow()
+        self.__scrolled_win.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.__tv_notices = Gtk.TextView()
+        self.__tv_notices.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.__tv_notices.set_editable(False)
+        self.__scrolled_win.add(self.__tv_notices)
+        self.__notices_text_buf = None
+        self.__tag_bold = None
+        self.__notebook.append_page(self.__scrolled_win,
+                                    Gtk.Label(_("Notices")))
+        self.add(self.__vbox)
+
+    def win_delete_event(self, widget, event, data=None):
+        """
+        callback for the status window delete event
+
+        hide the window in case it is needed again, don't delete it
+        """
+        self.hide()
+        return True
+
+    def win_button_press(self, widget, event):
+        """
+        callback for the Close button press event on the status window
+
+        hide the window
+        """
+        self.hide()
+
+    def clear_results(self):
+        """
+        clear the list store for the results tree view
+        """
+
+        self.__list_store.clear()
+
+    def add_result(self, slot, state, fraction_done, project, task_name):
+        """
+        add a task result to tree view
+        if the task is running, make the fraction done appear in bold text
+        """
+        if state == _("Running"):
+            fraction_done = "<b>" + fraction_done + "</b>"
+
+        self.__list_store.append([slot, state, fraction_done, project, task_name])
+
+    def clear_notices(self):
+        """
+        clear the notices text view
+        """
+
+        self.__notices_text_buf = Gtk.TextBuffer()
+        self.__tag_bold = self.__notices_text_buf.create_tag("bold", weight=Pango.Weight.BOLD)
+
+        self.__tv_notices.set_buffer(self.__notices_text_buf)
+
+    def add_notice(self, description, received, project, title):
+        """
+        add a project notice to the top of the notice text buffer
+
+        description = str
+        received = datetime
+        project = str
+        title = str
+        """
+
+        iter_start = self.__notices_text_buf.get_start_iter()
+        self.__notices_text_buf.insert(iter_start, description + "\n\n")
+
+        iter_start = self.__notices_text_buf.get_start_iter()
+        self.__notices_text_buf.insert(iter_start, _("Received - ") + \
+                                       received.strftime("%d %B %Y, %I:%M%p") + "\n")
+
+        iter_start = self.__notices_text_buf.get_start_iter()
+        self.__notices_text_buf.insert_with_tags(iter_start, project + \
+                                                 " - " + title +"\n\n", self.__tag_bold)
+
+    def update_statistics(self, stat_date, total_uc, total_hc, avg_uc, avg_hc,
+                          today_uc, today_hc):
+        """
+        update the user statistics
+
+        stat_date = date
+        total_uc = float
+        total_hc = float
+        avg_uc = float
+        today_uc = float
+        today_bc = float
+        """
+
+        self.__lbl_stat_date.set_text(stat_date.strftime("%d %b %Y"))
+        self.__lbl_stat_total_uc.set_text("{:1.3f}".format(total_uc))
+        self.__lbl_stat_total_hc.set_text("{:1.3f}".format(total_hc))
+        self.__lbl_stat_avg_uc.set_text("{:1.3f}".format(avg_uc))
+        self.__lbl_stat_avg_hc.set_text("{:1.3f}".format(avg_hc))
+        self.__lbl_stat_today_uc.set_text("{:1.3f}".format(today_uc))
+        self.__lbl_stat_today_hc.set_text("{:1.3f}".format(today_hc))
+
+    def set_all_tasks_to_stopped(self):
+        """
+        sets the status of all tasks to "Stopped"
+        """
+        the_iter = self.__list_store.get_iter_first()
+        while the_iter is not None:
+            self.__list_store.set_value(the_iter, 1, _("Stopped"))
+            the_iter = self.__list_store.iter_next(the_iter)
+
+def main():
+    """
+    main function - debugging code goes here
+    """
+    return
+
+if __name__ == "__main__":
+    main()

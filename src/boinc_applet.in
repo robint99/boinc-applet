@@ -12,6 +12,28 @@ Provide a status dialog to show the status of all current and pending BOINC
 tasks, the user's credits earned and any project notices recieved
 
 Provide an about dialog
+
+
+Copyright (C) 1997-2003 Free Software Foundation, Inc.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+02110-1301, USA.
+
+Author:
+    Robin Thompson
+
 """
 
 import gettext
@@ -24,9 +46,12 @@ sys.path.insert(1, '@pythondir@')
 
 import gi
 gi.require_version("Gtk", "2.0")
-from gi.repository import Gtk, MatePanelApplet, GObject, Pango, Gio
+from gi.repository import Gtk, MatePanelApplet, GObject, Gio
 import time
 import boinc_client
+import about_win
+import status_win
+import prefs_win
 
 def write_to_log_file(thing, newfile):
 
@@ -48,7 +73,7 @@ def write_to_log_file(thing, newfile):
     thefile.close()
 
 
-class BoincApplet:
+class BoincApplet(object):
     """
     Class to encapsulate all of the applet's functionality
 
@@ -81,7 +106,8 @@ class BoincApplet:
         self.lbl_today_uc = None
         self.screen = None
         self.settings_path = self.panel_applet.get_preferences_path()
-        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.BoincMonitor", self.settings_path)
+        self.settings = Gio.Settings.new_with_path("org.mate.panel.applet.BoincMonitor",
+                                                   self.settings_path)
         self.panel_box = None
         self.event_box = None
         self.num_notices = 0
@@ -91,85 +117,10 @@ class BoincApplet:
         self.update_sundries_interval = 0
         self.offline_timer_obj = None
 
-        """
-        specify instance attributes relating to the status window
-        """
-        self.status_win = None
-        self.status_win_button = None
-        self.status_win_vbox = None
-        self.status_win_hbx = None
-        self.status_win_tree_view = None
-        self.status_win_notebook = None
-        self.status_win_list_store = None
-        self.status_win_slot_renderer = None
-        self.status_win_state_renderer = None
-        self.status_win_fd_renderer = None
-        self.status_win_project_renderer = None
-        self.status_win_name_renderer = None
-        self.status_win_col_slot = None
-        self.status_win_col_state = None
-        self.status_win_col_fraction_done = None
-        self.status_win_col_project = None
-        self.status_win_col_task_name = None
-        self.status_win_table_stats = None
-        self.status_win_lbl_data_col = None
-        self.status_win_lbl_stat_date = None
-        self.status_win_lbl_uct_col = None
-        self.status_win_lbl_stat_today_uc = None
-        self.status_win_lbl_hct_col = None
-        self.status_win_lbl_stat_today_hc = None
-        self.status_win_lbl_title_avg_uc_col = None
-        self.status_win_lbl_stat_avg_uc = None
-        self.status_win_lbl_title_avg_hc_col = None
-        self.status_win_lbl_stat_avg_hc = None
-        self.status_win_lbl_total_uc_col = None
-        self.status_win_lbl_stat_total_uc = None
-        self.status_win_lbl_total_hc_col = None
-        self.status_win_lbl_stat_total_hc = None
-        self.status_win_scrolled_win = None
-        self.status_win_tv_notices = None
-
-        """
-        specify instance attributes relating to the preferences window
-        """
-        self.prefs_win = None
-        self.prefs_win_vbox = None
-        self.prefs_win_cancel_btn = None
-        self.prefs_win_ok_btn = None
-        self.prefs_win_hbbx = None
-        self.prefs_win_frame_display = None
-        self.prefs_win_table_display = None
-        self.prefs_win_lbl_numtasks = None
-        self.prefs_win_spinbtn_tasks = None
-        self.prefs_win_spinbtn_adj = None
-        self.prefs_win_cbc_today_uc = None
-        self.prefs_win_cbc_total_uc = None
-        self.prefs_win_frame_display_align = None
-        self.prefs_win_frame_updates = None
-        self.prefs_win_frame_updates_align = None
-        self.prefs_win_table_updates = None
-        self.prefs_win_lbl_task_interval = None
-        self.prefs_win_spinbtn_task_interval = None
-        self.prefs_win_spinbtn_task_adj = None
-        self.prefs_win_lbl_sundries_interval = None
-        self.prefs_win_spinbtn_lp_interval = None
-        self.prefs_win_spinbtn_si_adj = None
-
-        """
-        specify instance attributes relating to the about window
-        """
-        self.about_win = None
-        self.about_win_button = None
-        self.about_win_vbox = None
-        self.about_win_hbx = None
-        self.about_win_image = None
-        self.about_win_lbl_title = None
-        self.about_win_lbl_blurb1 = None
-        self.about_win_lbl_blurb2 = None
-        self.about_win_hbx_gpl = None
-        self.about_win_lbl_gpl1 = None
-        self.about_win_lb_gpl = None
-        self.about_win_lbl_gpl = None
+        # the various windows the applet can display
+        self.prefswin = None
+        self.aboutwin = None
+        self.statuswin = None
 
         # set up the actions and right click menu for the applet
         action_group = Gtk.ActionGroup("BoincMonitorActions")
@@ -258,13 +209,9 @@ class BoincApplet:
 
         #update the status window if it's been created, i.e.
         # change the window's title and set the status of each task to 'Stopped'
-        if self.status_win is not None:
-            self.status_win.set_title(_("Boinc client - not running"))
-
-            the_iter = self.status_win_list_store.get_iter_first()
-            while the_iter is not None:
-                self.status_win_list_store.set_value(the_iter, 1, _("Stopped"))
-                the_iter = self.status_win_list_store.iter_next(the_iter)
+        if self.statuswin is not None:
+            self.statuswin.set_title(_("Boinc client - not running"))
+            self.statuswin.set_all_tasks_to_stopped()
 
         self.offline_timer_obj = GObject.timeout_add(5000, self.offline_timer)
 
@@ -281,8 +228,8 @@ class BoincApplet:
             # the client is online - start all regular updates
             self.offline_timer_obj = None
             self.do_first_update()
-            if self.status_win is not None:
-                self.status_win.set_title(_("Boinc client - running"))
+            if self.statuswin is not None:
+                self.statuswin.set_title(_("Boinc client - running"))
 
             retval = False # stop this timer
         else:
@@ -292,7 +239,7 @@ class BoincApplet:
 
     def change_panel_orient(self, applet, orient):
         """
-        callthe_applet.k function for when the panel changes orientation (top, left, bottom, right)
+        callback function for when the panel changes orientation (top, left, bottom, right)
 
         setup the panel according the new orientation and populate it with info from the
         client
@@ -414,26 +361,17 @@ class BoincApplet:
 
             self.boinc.read_notices()
 
-            if self.status_win is not None:
+            if self.statuswin is not None:
                 if self.num_notices != self.boinc.num_notices():
                     # new notices have been received
-                    text_buf = Gtk.TextBuffer()
-                    tag_bold = text_buf.create_tag("bold", weight=Pango.Weight.BOLD)
+                    self.statuswin.clear_notices()
 
                     for notice in self.boinc.notices:
+                        self.statuswin.add_notice(notice.description,
+                                                  notice.time_received,
+                                                  notice.project,
+                                                  notice.title)
 
-                        iter_start = text_buf.get_start_iter()
-                        text_buf.insert(iter_start, notice.description + "\n\n")
-
-                        iter_start = text_buf.get_start_iter()
-                        text_buf.insert(iter_start, _("Received - ") + \
-                                        notice.time_received.strftime("%d %B %Y, %I:%M%p") + "\n")
-
-                        iter_start = text_buf.get_start_iter()
-                        text_buf.insert_with_tags(iter_start, notice.project + \
-                                                  " - " + notice.title +"\n\n", tag_bold)
-
-                    self.status_win_tv_notices.set_buffer(text_buf)
                     self.num_notices = self.boinc.num_notices()
 
     def get_user_credits(self):
@@ -443,20 +381,15 @@ class BoincApplet:
         if self.boinc is not None:
             self.boinc.read_user_credits()
 
-            if self.status_win is not None:
-                self.status_win_lbl_stat_date.set_text(self.boinc.stat_date.strftime("%d %b %Y"))
-                self.status_win_lbl_stat_total_uc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_total_uc))
-                self.status_win_lbl_stat_total_hc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_total_hc))
-                self.status_win_lbl_stat_avg_uc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_avg_uc))
-                self.status_win_lbl_stat_avg_hc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_avg_hc))
-                self.status_win_lbl_stat_today_uc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_today_uc))
-                self.status_win_lbl_stat_today_hc.set_text(
-                    "{:1.3f}".format(self.boinc.stat_today_hc))
+            if self.statuswin is not None:
+
+                self.statuswin.update_statistics(self.boinc.stat_date,
+                                                 self.boinc.stat_total_uc,
+                                                 self.boinc.stat_total_hc,
+                                                 self.boinc.stat_avg_uc,
+                                                 self.boinc.stat_avg_hc,
+                                                 self.boinc.stat_today_uc,
+                                                 self.boinc.stat_today_hc)
 
             # update the panel if showing the day or total user credits
             if self.lbl_today_uc is not None:
@@ -480,7 +413,7 @@ class BoincApplet:
 
         # notices are only ever displayed on the status window, so there's no need to fetch them
         # if it hasn't been created
-        if self.status_win is not None:
+        if self.statuswin is not None:
             self.get_notices()
 
     def update_results(self):
@@ -505,122 +438,38 @@ class BoincApplet:
                 i += 1
 
             # if the information has window been created, that needs to be updated also
-            if self.status_win is not None:
+            if self.statuswin is not None:
                 i = 0
-                self.status_win_list_store.clear()
+                self.statuswin.clear_results()
                 task_results = self.boinc.get_num_task_results()
                 while i < task_results:
-                     # if a task is currently running, make the percentage complete appear in
-                     # bold text
                     task_state = self.boinc.get_task_state(i)
                     task_fd = "%2.2f" % self.boinc.get_task_fraction_done(i)+ "%"
-                    if task_state == _("Running"):
-                        task_fd = "<b>" + task_fd + "</b>"
-                    self.status_win_list_store.append(["%d" % i,
-                                                       task_state,
-                                                       task_fd,
-                                                       self.boinc.get_task_project(i),
-                                                       self.boinc.get_task_name(i)])
+                    self.statuswin.add_result("%d" % i,
+                                              task_state,
+                                              task_fd,
+                                              self.boinc.get_task_project(i),
+                                              self.boinc.get_task_name(i))
                     i += 1
 
         return True
 
-###################### 'About' window code ################################
-
-    def about_win_delete_event(self, widget, event, data=None):
-        """
-        callthe_applet.k for the about window delete event
-
-        Note: the window is not deleted, it is hidden instead so that it can
-        be shown again if required later
-        """
-        self.about_win.hide()
-        return True
-
-    def about_win_button_press(self, widget, event):
-        """
-        callthe_applet.k for the Ok button on the About dialog
-        """
-        self.about_win.hide()
-
     def show_about_win(self, data=None):
         """
-        callthe_applet.k to show the about window
+        callback to show the about window
 
         create the window if it does not already exist, otherwise just show it
         """
 
-        if self.about_win is not None:
-            self.about_win.present()
+        if self.aboutwin is not None:
+            self.aboutwin.present()
         else:
-            self.about_win = Gtk.Window(title="Boinc applet")
-            self.about_win_button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
-            self.about_win_button.connect("button-press-event", self.about_win_button_press)
-            self.about_win.connect("delete-event", self.about_win_delete_event)
-            self.about_win.set_border_width(5)
-            self.about_win_vbox = Gtk.VBox()
-            self.about_win_vbox.set_spacing(2)
-            self.about_win_hbx = Gtk.HButtonBox()
-            self.about_win_hbx.set_layout(Gtk.ButtonBoxStyle.END)
-            self.about_win_hbx.pack_start(self.about_win_button, False, False, 4)
-
-            self.about_win_image = Gtk.Image()
-            self.about_win_image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
-            self.about_win_lbl_title = Gtk.Label()
-            self.about_win_lbl_title.set_use_markup(True)
-            self.about_win_lbl_title.set_markup('<b><span size="17408">Boinc Monitor Applet V'+ \
-                                                "@VERSION@" + '</span></b>')
-
-            self.about_win_lbl_blurb1 = \
-                Gtk.Label(_("An applet to monitor the progress of BOINC tasks."))
-            self.about_win_lbl_blurb2 = \
-                Gtk.Label(_("This program comes with ABSOLUTELY NO WARRENTY."))
-
-            self.about_win_hbx_gpl = Gtk.HBox()
-            self.about_win_lbl_gpl1 = Gtk.Label(_("See the"))
-            self.about_win_lb_gpl = \
-                Gtk.LinkButton("http://www.gnu.org/licenses/gpl-3.0.html",
-                               _("GNU General Public License, version 3 or later"))
-            self.about_win_lbl_gpl = Gtk.Label(_("for details"))
-
-            self.about_win_hbx_gpl.pack_start(self.about_win_lbl_gpl1, False, False, 2)
-            self.about_win_hbx_gpl.pack_start(self.about_win_lb_gpl, False, False, 1)
-            self.about_win_hbx_gpl.pack_start(self.about_win_lbl_gpl, False, False, 0)
-
-            self.about_win_vbox.pack_start(self.about_win_image, False, False, 2)
-            self.about_win_vbox.pack_start(self.about_win_lbl_title, False, False, 0)
-            self.about_win_vbox.pack_start(self.about_win_lbl_blurb1, False, False, 8)
-            self.about_win_vbox.pack_start(self.about_win_lbl_blurb2, False, False, 0)
-            self.about_win_vbox.pack_start(self.about_win_hbx_gpl, False, False, 0)
-            self.about_win_vbox.pack_end(self.about_win_hbx, False, False, 5)
-            self.about_win.add(self.about_win_vbox)
-
-            self.about_win.show_all()
-
-###################### Preferences window code ################################
-
-    def prefs_win_delete_event(self, widget, event, data=None):
-        """
-        callthe_applet.k for the preferences window delete event
-
-        do not delete the window, hide it instead so that it can be shown again
-        later if needed
-        """
-        self.prefs_win.hide()
-        return True
-
-    def prefs_win_cancel_button_press(self, widget, event):
-        """
-        callthe_applet.k for the preferences window Cancel button press
-
-        hide the window
-        """
-
-        self.prefs_win.hide()
+            self.aboutwin = about_win.AboutWindow()
+            self.aboutwin.show_all()
 
     def prefs_win_ok_button_press(self, widget, event):
         """
-        callthe_applet.k for the Ok button the preferences window
+        callback for the Ok button the preferences window
 
         update the panel according to any changes in the preferences and set new
         timers if update intervals have changed
@@ -628,26 +477,24 @@ class BoincApplet:
 
         #identify what, if anything, the user has changed
         timers_changed = \
-           (self.prefs_win_spinbtn_task_interval.get_value() != self.update_results_interval) or \
-           (self.prefs_win_spinbtn_lp_interval.get_value() != self.update_sundries_interval)
+           (self.prefswin.task_interval != self.update_results_interval) or \
+           (self.prefswin.lp_interval != self.update_sundries_interval)
 
-        panel_items_changed = self.prefs_win_spinbtn_tasks.get_value() != \
+        panel_items_changed = self.prefswin.num_tasks != \
                               self.settings.get_int("tasks-to-display")
         panel_items_changed = panel_items_changed or \
                               (self.settings.get_boolean("show-today-uc") != \
-                              self.prefs_win_cbc_today_uc.get_active())
+                              self.prefswin.show_today_uc)
         panel_items_changed = panel_items_changed or \
                               (self.settings.get_boolean("show-total-uc") != \
-                              self.prefs_win_cbc_total_uc.get_active())
+                              self.prefswin.show_total_uc)
 
         # write the new settings
-        self.settings.set_int("tasks-to-display", self.prefs_win_spinbtn_tasks.get_value())
-        self.settings.set_boolean("show-total-uc", self.prefs_win_cbc_total_uc.get_active())
-        self.settings.set_boolean("show-today-uc", self.prefs_win_cbc_today_uc.get_active())
-        self.settings.set_int("task-update-interval",
-                              self.prefs_win_spinbtn_task_interval.get_value())
-        self.settings.set_int("sundries-update-interval",
-                              self.prefs_win_spinbtn_lp_interval.get_value())
+        self.settings.set_int("tasks-to-display", self.prefswin.num_tasks)
+        self.settings.set_boolean("show-total-uc", self.prefswin.show_total_uc)
+        self.settings.set_boolean("show-today-uc", self.prefswin.show_today_uc)
+        self.settings.set_int("task-update-interval", self.prefswin.task_interval)
+        self.settings.set_int("sundries-update-interval", self.prefswin.lp_interval)
 
         # if the update intervals have changed then we need to delete the old timers
         # and add new ones
@@ -659,9 +506,8 @@ class BoincApplet:
         if panel_items_changed:
             # panel items have been changed, so the panel needs to be setup again
             self.setup_panel()
-            update_info = True
 
-        self.prefs_win.hide()
+        self.prefswin.hide()
 
         if panel_items_changed or timers_changed:
             # new info on the panel needs to be updated immediatly
@@ -672,376 +518,50 @@ class BoincApplet:
 
     def show_prefs_win(self, data=None):
         """
-        callthe_applet.k to show the preferences window
+        callback to show the preferences window
 
         create it if necessary, otherwise show it
         """
-        if self.prefs_win is not None:
-            self.prefs_win.present()
+        if self.prefswin is not None:
+            self.prefswin.present()
         else:
-            self.prefs_win = Gtk.Window(title=_("Preferences"))
-            self.prefs_win.connect("delete-event", self.prefs_win_delete_event)
-            self.prefs_win.set_border_width(5)
-            self.prefs_win_vbox = Gtk.VBox()
-            self.prefs_win_vbox.set_spacing(2)
-            self.prefs_win_cancel_btn = Gtk.Button(label="Cancel", stock=Gtk.STOCK_CANCEL)
-            self.prefs_win_cancel_btn.connect("button-press-event",
-                                              self.prefs_win_cancel_button_press)
-            self.prefs_win_ok_btn = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)
-            self.prefs_win_ok_btn.connect("button-press-event", self.prefs_win_ok_button_press)
-            self.prefs_win_hbbx = Gtk.HButtonBox()
-            self.prefs_win_hbbx.set_spacing(4)
-            self.prefs_win_hbbx.set_layout(Gtk.ButtonBoxStyle.END)
-            self.prefs_win_hbbx.pack_start(self.prefs_win_ok_btn, False, False, 4)
-            self.prefs_win_hbbx.pack_start(self.prefs_win_cancel_btn, False, False, 4)
-
-            self.prefs_win_frame_display = Gtk.Frame(label=_("Display"))
-            lbl = self.prefs_win_frame_display.get_label_widget()
-            lbl.set_use_markup(True)
-            lbl.set_label("<b>" + _("Display") + "</b>")
-
-            self.prefs_win_frame_display.set_shadow_type(Gtk.ShadowType.NONE)
-            self.prefs_win_table_display = Gtk.Table(rows=3, columns=2, homogeneous=False)
-
-            self.prefs_win_lbl_numtasks = Gtk.Label(_("Number of tasks to display:"))
-            self.prefs_win_table_display.attach(self.prefs_win_lbl_numtasks, 0, 1, 0, 1,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                4, 2)
-            self.prefs_win_lbl_numtasks.set_alignment(0.03, 0.5)
-
-            self.prefs_win_spinbtn_tasks = Gtk.SpinButton()
-            self.prefs_win_spinbtn_adj = Gtk.Adjustment(lower=0, upper=8, step_increment=1,
-                                                        page_increment=1)
-            self.prefs_win_spinbtn_tasks.set_adjustment(self.prefs_win_spinbtn_adj)
-            self.prefs_win_spinbtn_tasks.set_numeric(True)
-            self.prefs_win_spinbtn_tasks.set_wrap(True)
-            self.prefs_win_spinbtn_tasks.set_max_length(1)
-            self.prefs_win_spinbtn_tasks.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
-
-            self.prefs_win_table_display.attach(self.prefs_win_spinbtn_tasks, 1, 2, 0, 1,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 4)
-
-            self.prefs_win_cbc_today_uc = Gtk.CheckButton(_("Display today's credit"))
-            self.prefs_win_table_display.attach(self.prefs_win_cbc_today_uc, 0, 2, 1, 2,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 2)
-
-            self.prefs_win_cbc_total_uc = Gtk.CheckButton(_("Display total credit"))
-            self.prefs_win_table_display.attach(self.prefs_win_cbc_total_uc, 0, 2, 2, 3,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 2)
-
-            self.prefs_win_frame_display_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                               xscale=1.0, yscale=1.0)
-            self.prefs_win_frame_display_align.set_padding(0, 0, 12, 0)
-            self.prefs_win_frame_display_align.add(self.prefs_win_table_display)
-            self.prefs_win_frame_display.add(self.prefs_win_frame_display_align)
-
-            frame_title = _("Updates")
-            self.prefs_win_frame_updates = Gtk.Frame(label=frame_title)
-            lbl = self.prefs_win_frame_updates.get_label_widget()
-            lbl.set_use_markup(True)
-            lbl.set_label("<b>" + _("Updates")+ "</b>")
-
-            self.prefs_win_frame_updates.set_shadow_type(Gtk.ShadowType.NONE)
-            self.prefs_win_table_updates = Gtk.Table(rows=2, columns=2, homogeneous=False)
-
-            self.prefs_win_lbl_task_interval = Gtk.Label(_("Task update interval (minutes):"))
-            self.prefs_win_table_updates.attach(self.prefs_win_lbl_task_interval, 0, 1, 0, 1,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 2)
-            self.prefs_win_lbl_task_interval.set_alignment(0.03, 0.5)
-
-            self.prefs_win_spinbtn_task_interval = Gtk.SpinButton()
-            self.prefs_win_spinbtn_task_adj = Gtk.Adjustment(lower=1, upper=60,
-                                                             step_increment=1,
-                                                             page_increment=1)
-            self.prefs_win_spinbtn_task_interval.set_adjustment(self.prefs_win_spinbtn_task_adj)
-            self.prefs_win_spinbtn_task_interval.set_numeric(True)
-            self.prefs_win_spinbtn_task_interval.set_wrap(True)
-            self.prefs_win_spinbtn_task_interval.set_max_length(2)
-            self.prefs_win_spinbtn_task_interval.set_update_policy\
-                                                (Gtk.SpinButtonUpdatePolicy.IF_VALID)
-
-            self.prefs_win_table_updates.attach(self.prefs_win_spinbtn_task_interval, 1, 2, 0, 1,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 2)
-
-            self.prefs_win_lbl_sundries_interval = \
-                Gtk.Label(_("User credits/project notices update interval (hours):"))
-            self.prefs_win_table_updates.attach(self.prefs_win_lbl_sundries_interval, 0, 1, 1, 2,
-                                                Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
-                                                2, 2)
-            self.prefs_win_lbl_sundries_interval.set_alignment(0.03, 0.5)
-
-            self.prefs_win_spinbtn_lp_interval = Gtk.SpinButton()
-            self.prefs_win_spinbtn_si_adj = Gtk.Adjustment(lower=1, upper=8,
-                                                           step_increment=1,
-                                                           page_increment=1)
-            self.prefs_win_spinbtn_lp_interval.set_adjustment(self.prefs_win_spinbtn_si_adj)
-            self.prefs_win_spinbtn_lp_interval.set_numeric(True)
-            self.prefs_win_spinbtn_lp_interval.set_wrap(True)
-            self.prefs_win_spinbtn_lp_interval.set_max_length(1)
-            self.prefs_win_spinbtn_lp_interval.set_update_policy \
-                                                        (Gtk.SpinButtonUpdatePolicy.IF_VALID)
-
-            self.prefs_win_table_updates.attach(self.prefs_win_spinbtn_lp_interval,
-                                                1, 2, 1, 2, Gtk.AttachOptions.FILL,
-                                                Gtk.AttachOptions.SHRINK, 2, 2)
-
-            self.prefs_win_frame_updates_align = Gtk.Alignment(xalign=0.5, yalign=0.5,
-                                                               xscale=1.0, yscale=1.0)
-            self.prefs_win_frame_updates_align.set_padding(0, 0, 12, 0)
-            self.prefs_win_frame_updates_align.add(self.prefs_win_table_updates)
-            self.prefs_win_frame_updates.add(self.prefs_win_frame_updates_align)
-
-            self.prefs_win_vbox.pack_start(self.prefs_win_frame_display, True, True, 4)
-            self.prefs_win_vbox.pack_start(self.prefs_win_frame_updates, True, True, 4)
-            self.prefs_win_vbox.pack_start(self.prefs_win_hbbx, False, False, 0)
-
-            self.prefs_win.connect("delete-event", self.prefs_win_delete_event)
-
-            self.prefs_win_spinbtn_tasks.set_value(2)
-
-            self.prefs_win.add(self.prefs_win_vbox)
+            # create the preferences window and specify the callback for the Ok button press
+            # so we know when preferences have been changed
+            self.prefswin = prefs_win.PrefsWindow(self.prefs_win_ok_button_press)
 
             # read the current preferences and update the window accordingly
-            self.prefs_win_spinbtn_tasks.set_value(self.settings.get_int("tasks-to-display"))
-            self.prefs_win_cbc_total_uc.set_active(self.settings.get_boolean("show-total-uc"))
-            self.prefs_win_cbc_today_uc.set_active(self.settings.get_boolean("show-today-uc"))
-            self.prefs_win_spinbtn_task_interval.set_value \
-                    (self.settings.get_int("task-update-interval"))
-            self.prefs_win_spinbtn_lp_interval.set_value \
-                    (self.settings.get_int("sundries-update-interval"))
 
-            self.prefs_win.show_all()
+            self.prefswin.num_tasks = self.settings.get_int("tasks-to-display")
+            self.prefswin.show_total_uc = self.settings.get_boolean("show-total-uc")
+            self.prefswin.show_today_uc = self.settings.get_boolean("show-today-uc")
+            self.prefswin.task_interval = self.settings.get_int("task-update-interval")
+            self.prefswin.lp_interval = self.settings.get_int("sundries-update-interval")
+
+            self.prefswin.show_all()
 
 ###################### Status window code ###############################
 
-    def status_win_delete_event(self, widget, event, data=None):
-        """
-        callthe_applet.k for the status window delete event
-
-        hide the window in case it is needed again, don't delete it
-        """
-        self.status_win.hide()
-        return True
-
-    def status_win_button_press(self, widget, event):
-        """
-        callthe_applet.k for the Close button press event on the status window
-
-        hide the window
-        """
-        self.status_win.hide()
 
     def show_status_win(self, data=None):
         """
-        callthe_applet.k for the show status window action
+        callback for the show status window action
 
         create the window if it's not already been done, otherwise just show it
         """
 
-        if self.status_win is not None:
+        if self.statuswin is not None:
             # the window has already been created, so just show it
-            self.status_win.present()
+            self.statuswin.present()
         else:
             # first time through, create the window
+            self.statuswin = status_win.StatusWindow()
+
             if self.offline_timer_obj:
-                self.status_win = Gtk.Window(title=_("Boinc client - not running"))
+                self.statuswin.set_title(_("Boinc client - not running"))
             else:
-                self.status_win = Gtk.Window(title=_("Boinc client - running"))
+                self.statuswin.set_title(_("Boinc client - running"))
 
-            self.status_win_button = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
-            self.status_win_button.connect("button-press-event", self.status_win_button_press)
-            self.status_win.connect("delete-event", self.status_win_delete_event)
-            self.status_win.set_border_width(5)
-            self.status_win_vbox = Gtk.VBox()
-            self.status_win_vbox.set_spacing(2)
-            self.status_win_hbx = Gtk.HButtonBox()
-            self.status_win_hbx.set_layout(Gtk.ButtonBoxStyle.END)
-            self.status_win_hbx.pack_start(self.status_win_button, False, False, 4)
-
-            self.status_win_notebook = Gtk.Notebook()
-            self.status_win_vbox.pack_start(self.status_win_notebook, True, True, 4)
-            self.status_win_vbox.pack_start(self.status_win_hbx, True, True, 0)
-
-            #initialise the treeview and liststore
-            self.status_win_tree_view = Gtk.TreeView()
-
-            # task num, state, %complete, project, task name
-            self.status_win_list_store = Gtk.ListStore(str, str, str, str, str)
-
-            self.status_win_slot_renderer = Gtk.CellRendererText()
-            self.status_win_state_renderer = Gtk.CellRendererText()
-            self.status_win_fd_renderer = Gtk.CellRendererText()
-            self.status_win_project_renderer = Gtk.CellRendererText()
-            self.status_win_name_renderer = Gtk.CellRendererText()
-
-            # create columns for the treeview
-            self.status_win_col_slot = Gtk.TreeViewColumn("",
-                                                          self.status_win_slot_renderer,
-                                                          text=0)
-            self.status_win_col_slot.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.status_win_col_slot.set_fixed_width(30)
-
-            self.status_win_col_state = Gtk.TreeViewColumn(_("State"),
-                                                           self.status_win_state_renderer,
-                                                           text=1)
-            self.status_win_col_state.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.status_win_col_state.set_fixed_width(75)
-
-            self.status_win_col_fraction_done = Gtk.TreeViewColumn(_("Complete"),
-                                                                   self.status_win_fd_renderer,
-                                                                   markup=2)
-            self.status_win_col_fraction_done.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.status_win_col_fraction_done.set_fixed_width(75)
-
-            self.status_win_col_project = Gtk.TreeViewColumn(_("Project"),
-                                                             self.status_win_project_renderer,
-                                                             text=3)
-            self.status_win_col_project.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.status_win_col_project.set_fixed_width(200)
-
-            self.status_win_col_task_name = Gtk.TreeViewColumn(_("Task name"),
-                                                               self.status_win_name_renderer,
-                                                               text=4)
-            self.status_win_col_task_name.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self.status_win_col_task_name.set_fixed_width(200)
-
-            # add the columns
-            self.status_win_tree_view.set_model(self.status_win_list_store)
-            self.status_win_tree_view.append_column(self.status_win_col_slot)
-            self.status_win_tree_view.append_column(self.status_win_col_state)
-            self.status_win_tree_view.append_column(self.status_win_col_fraction_done)
-            self.status_win_tree_view.append_column(self.status_win_col_project)
-            self.status_win_tree_view.append_column(self.status_win_col_task_name)
-
-            self.status_win_notebook.append_page(self.status_win_tree_view, Gtk.Label(_("Tasks")))
-
-            self.status_win_table_stats = Gtk.Table(rows=11, columns=2, homogeneous=False)
-            self.status_win_table_stats.attach(Gtk.Label(""), 0, 1, 0, 1,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(Gtk.Label(""), 1, 2, 0, 1,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_data_col = Gtk.Label("<u>" + _("Date:") + "</u>")
-            self.status_win_lbl_data_col.set_use_markup(True)
-            self.status_win_table_stats.attach(self.status_win_lbl_data_col, 0, 1, 1, 2,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_lbl_data_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_date = Gtk.Label("")
-            self.status_win_lbl_stat_date.set_alignment(0.05, 0.5)
-            self.status_win_lbl_stat_date.set_use_markup(True)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_date, 1, 2, 1, 2,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_table_stats.attach(Gtk.Label(""), 0, 1, 2, 3,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(Gtk.Label(""), 1, 2, 2, 3,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_uct_col = Gtk.Label(_("User credit today: "))
-            self.status_win_lbl_uct_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_today_uc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_today_uc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_uct_col,
-                                               0, 1, 3, 4, Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_today_uc, 1, 2, 3, 4,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_hct_col = Gtk.Label(_("Host credit today: "))
-            self.status_win_lbl_hct_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_today_hc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_today_hc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_hct_col,
-                                               0, 1, 4, 5, Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_today_hc, 1, 2, 4, 5,
-                                               Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_table_stats.attach(Gtk.Label(""), 0, 1, 5, 6,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(Gtk.Label(""), 1, 2, 5, 6,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_title_avg_uc_col = Gtk.Label(_("User Daily Avg: "))
-            self.status_win_lbl_title_avg_uc_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_avg_uc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_avg_uc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_title_avg_uc_col, 0, 1, 6, 7,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_avg_uc, 1, 2, 6, 7,
-                                               Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_title_avg_hc_col = Gtk.Label(_("Host Daily Avg: "))
-            self.status_win_lbl_title_avg_hc_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_avg_hc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_avg_hc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_title_avg_hc_col, 0, 1, 7, 8,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_avg_hc, 1, 2, 7, 8,
-                                               Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_table_stats.attach(Gtk.Label(""), 0, 1, 8, 9,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(Gtk.Label(""), 1, 2, 8, 9,
-                                               Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_total_uc_col = Gtk.Label(_("User total credit: "))
-            self.status_win_lbl_total_uc_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_total_uc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_total_uc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_total_uc_col,
-                                               0, 1, 9, 10, Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_total_uc, 1, 2, 9, 10,
-                                               Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_lbl_total_hc_col = Gtk.Label(_("Host total credit: "))
-            self.status_win_lbl_total_hc_col.set_alignment(0.03, 0.5)
-            self.status_win_lbl_stat_total_hc = Gtk.Label("0.00")
-            self.status_win_lbl_stat_total_hc.set_alignment(0.05, 0.5)
-            self.status_win_table_stats.attach(self.status_win_lbl_total_hc_col,
-                                               0, 1, 10, 11, Gtk.AttachOptions.FILL,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-            self.status_win_table_stats.attach(self.status_win_lbl_stat_total_hc, 1, 2, 10, 11,
-                                               Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND,
-                                               Gtk.AttachOptions.SHRINK, 0, 0)
-
-            self.status_win_notebook.append_page(self.status_win_table_stats,
-                                                 Gtk.Label(_("Statistics")))
-
-            self.status_win_scrolled_win = Gtk.ScrolledWindow()
-            self.status_win_scrolled_win.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-            self.status_win_tv_notices = Gtk.TextView()
-            self.status_win_tv_notices.set_wrap_mode(Gtk.WrapMode.WORD)
-            self.status_win_tv_notices.set_editable(False)
-            self.status_win_scrolled_win.add(self.status_win_tv_notices)
-            self.status_win_notebook.append_page(self.status_win_scrolled_win,
-                                                 Gtk.Label(_("Notices")))
-            self.status_win.add(self.status_win_vbox)
-
-            self.status_win.show_all()
+            self.statuswin.show_all()
 
             #update results so that the window gets populated
 
@@ -1074,6 +594,10 @@ def main():
     """
     main function - debugging code goes here
     """
+
+#    aboutwin = about_win.AboutWindow()
+#    aboutwin.show_all()
+#    Gtk.main()
     return
 
 if __name__ == "__main__":
