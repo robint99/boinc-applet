@@ -1,0 +1,10 @@
+[Applet Factory]
+Id=BoincMonitorAppletFactory
+Location=@LOCATION@
+_Name=Boinc Monitor Applet
+_Description=An applet to monitor the BOINC client
+
+[BoincMonitorApplet]
+_Name=Boinc Monitor Applet
+_Description=An applet to monitor the BOINC client
+Icon=desktop

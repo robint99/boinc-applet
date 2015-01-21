@@ -1,0 +1,6 @@
+src/boinc_applet.in
+src/boinc_client.in
+src/prefs_win.in
+src/status_win.in
+src/about_win.in
+src/org.mate.panel.applet.BoincMonitor.gschema.xml.in.in
