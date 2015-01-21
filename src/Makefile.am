@@ -14,7 +14,8 @@ do_substitution = $(AM_V_GEN)sed \
 		  -e 's,[@]pythondir[@],$(pythondir),g' \
 		  -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		  -e 's,[@]VERSION[@],$(VERSION),g' \
-		  -e 's,[@]LOCATION[@],$(appletdir),g'
+		  -e 's,[@]LOCATION[@],$(appletdir),g' \
+		  -e 's,[@]localedir[@],$(datadir)/locale,g' 
 
 #$(applets_in_files): $(applets_in_files).in Makefile
 #	$(AM_V_GEN)sed \
@@ -24,13 +25,16 @@ do_substitution = $(AM_V_GEN)sed \
 #	  	-e "s|\@VERSION\@|$(VERSION)|" \
 #		$< > $@
 
-%.mate-panel-applet: %.mate-panel-applet.in Makefile
+%.mate-panel-applet.in: %.mate-panel-applet.in.in Makefile
 	$(AM_V_GEN)sed \
 		-e "s|\@LOCATION\@|$(appletdir)|" \
 		-e "s|\@pythondir\@|$(pythondir)|" \
 	  	-e "s|\@PACKAGE\@|$(PACKAGE)|" \
 	  	-e "s|\@VERSION\@|$(VERSION)|" \
+		-e "s|\@localdir\@|$(datadir)//locale|" \
 		$< > $@
+
+@PANEL_INTLTOOL_MATE_PANEL_APPLET_RULE@
 
 servicedir       = $(datadir)/dbus-1/services
 service_in_files = org.mate.panel.applet.BoincMonitorAppletFactory.service.in
@@ -40,8 +44,15 @@ imagedir	 = $(libexecdir)
 image_DATA	 = sahsl.png \
 		   sahsd.png
 
+#%.gschema.xml.in: %.gschema.xml.in.in Makefile
+#	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
+#
 gsettings_SCHEMAS = org.mate.panel.applet.BoincMonitor.gschema.xml
+@INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
+
+$(gsettings_SCHEMAS).in: $(gsettings_SCHEMAS).in.in Makefile
+	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
 
 org.mate.panel.applet.BoincMonitorAppletFactory.service: $(service_in_files)
 	$(AM_V_GEN)sed \
@@ -87,15 +98,19 @@ install-data-hook:
 # in /usr/local/share/mate-panel/applets
 	mv $(appletsdir)/org.mate.panel.BoincMonitorApplet.mate-panel-applet /usr/share/mate-panel/applets/
 
-CLEANFILES = $(applet_SCRIPTS)
-EXTRA_DIST = $(srcdir)/boinc_applet.in \
-	     $(srcdir)/ boinc_client.in \
-	     $(srcdir)/rpc.in \
-	     $(srcdir)/about_win.in \
+CLEANFILES = $(applet_SCRIPTS) \
+	     $(gsettings_SCHEMAS) \
+	     $(gsettings_SCHEMAS).in \
+	     org.mate.panel.applet.BoincMonitorAppletFactory.service 
+
+EXTRA_DIST = boinc_applet.in \
+	     boinc_client.in \
+	     rpc.in \
+	     about_win.in \
 	     status_win.in \
 	     prefs_win.in \
 	     $(image_DATA) \
-	     $(srcdir)/org.mate.panel.applet.BoincMonitor.gschema.xml \
+	     $(gsettings_SCHEMAS).in.in \
 	     $(applets_in_files) \
 	     $(service_in_files)
 

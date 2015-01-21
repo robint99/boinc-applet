@@ -27,12 +27,6 @@
 import socket
 from xml.etree import ElementTree
 
-import gettext
-gettext.bindtextdomain ("boinc_monitor")
-gettext.textdomain ("boinc_monitor")
-_ = gettext.gettext
-
-
 GUI_RPC_HOSTNAME    = None  # localhost
 GUI_RPC_PORT        = 31416
 GUI_RPC_TIMEOUT     = 30

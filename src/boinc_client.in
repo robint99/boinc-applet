@@ -39,11 +39,6 @@ import datetime
 from html.parser import HTMLParser
 import collections
 
-import gettext
-gettext.bindtextdomain("boinc_monitor")
-gettext.textdomain("boinc_monitor")
-_ = gettext.gettext
-
 import rpc
 
 BoincProject = collections.namedtuple("BoincProject",

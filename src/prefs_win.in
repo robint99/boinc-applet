@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -30,11 +29,6 @@ Author:
 
 """
 
-import gettext
-gettext.bindtextdomain("boinc_monitor")
-gettext.textdomain("boinc_monitor")
-_ = gettext.gettext
-
 import sys
 sys.path.insert(1, '@pythondir@')
 
@@ -57,13 +51,13 @@ class PrefsWindow(Gtk.Window):
         create the window and its contents
         """
 
-        super().__init__(title="Preferences")
+        super().__init__(title=_("Preferences"))
 
         self.connect("delete-event", self.win_delete_event)
         self.set_border_width(5)
         self.__vbox = Gtk.VBox()
         self.__vbox.set_spacing(2)
-        self.__cancel_btn = Gtk.Button(label="Cancel", stock=Gtk.STOCK_CANCEL)
+        self.__cancel_btn = Gtk.Button(label=_("Cancel"), stock=Gtk.STOCK_CANCEL)
         self.__cancel_btn.connect("button-press-event",
                                   self.win_cancel_button_press)
         self.__ok_btn = Gtk.Button(label="Ok", stock=Gtk.STOCK_OK)

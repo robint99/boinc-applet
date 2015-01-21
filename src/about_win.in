@@ -27,11 +27,6 @@ Author:
 
 """
 
-import gettext
-gettext.bindtextdomain("boinc_monitor")
-gettext.textdomain("boinc_monitor")
-_ = gettext.gettext
-
 import sys
 sys.path.insert(1, '@pythondir@')
 
@@ -54,9 +49,9 @@ class AboutWindow(Gtk.Window):
         create the window and its contents
         """
 
-        super().__init__(title="Boinc Monitor applet")
+        super().__init__(title=_("Boinc Monitor Applet"))
 
-        self.__button = Gtk.Button(label="Close", stock=Gtk.STOCK_CLOSE)
+        self.__button = Gtk.Button(label=_("Close"), stock=Gtk.STOCK_CLOSE)
         self.__button.connect("button-press-event", self.win_button_press)
         self.connect("delete-event", self.win_delete_event)
         self.set_border_width(5)
@@ -70,7 +65,7 @@ class AboutWindow(Gtk.Window):
         self.__image.set_from_stock(Gtk.STOCK_ABOUT, Gtk.IconSize.DIALOG)
         self.__lbl_title = Gtk.Label()
         self.__lbl_title.set_use_markup(True)
-        self.__lbl_title.set_markup('<b><span size="17408">Boinc Monitor Applet V'+ \
+        self.__lbl_title.set_markup('<b><span size="17408">' +_('Boinc Monitor Applet') + 'V'+ \
                                             "@VERSION@" + '</span></b>')
 
         self.__lbl_blurb1 = \

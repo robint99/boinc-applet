@@ -30,11 +30,6 @@ Author:
 
 """
 
-import gettext
-gettext.bindtextdomain("boinc_monitor")
-gettext.textdomain("boinc_monitor")
-_ = gettext.gettext
-
 import sys
 sys.path.insert(1, '@pythondir@')
 

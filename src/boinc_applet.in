@@ -37,9 +37,8 @@ Author:
 """
 
 import gettext
-gettext.bindtextdomain("boinc_monitor")
-gettext.textdomain("boinc_monitor")
-_ = gettext.gettext
+trans = gettext.translation("boinc-applet","@localedir@")
+trans.install()
 
 import sys
 sys.path.insert(1, '@pythondir@')
@@ -126,7 +125,7 @@ class BoincApplet(object):
         action_group = Gtk.ActionGroup("BoincMonitorActions")
         action_group.add_actions([("prefs_action", Gtk.STOCK_PREFERENCES,
                                    _("_Preferences"), None, _("Preferences"), self.show_prefs_win),
-                                  ("detailed_status_action", Gtk.STOCK_HELP,
+                                  ("detailed_status_action", Gtk.STOCK_INFO,
                                    _("Detailed client status..."), None,
                                    _("Detailed client status..."), self.show_status_win),
                                   ("about_action", Gtk.STOCK_ABOUT,
@@ -137,6 +136,22 @@ class BoincApplet(object):
         menu_xml += '<menuitem name="' + _("Detailed client status...")
         menu_xml += '" action="detailed_status_action"/>' + '<menuitem name="'
         menu_xml += _("About...") + '" action="about_action"/><separator/>'
+
+        # specify the applet name and description here so that they can be detected by
+        # xgettext and included in the .pot file for translation - needs to match 
+        # what's in the .mate.panel.applet.in.in file
+        assert(_("Boinc Monitor Applet"))
+        assert(_("An applet to monitor the BOINC client"))
+
+        #ditto, except that this is for the translatable text in the gschema file
+        assert(_("Number of tasks to show in the panel"))
+        assert(_("Number of tasks whose completion status is displayed in the panel. Can be between 0 (no tasks are displayed) and 8."))
+        assert(_("How often (in minutes) task details are updated"))
+        assert(_("How often (in minutes) the task details in the panel are updated. Can be between 1 and 60 minutes."))
+        assert(_("How often (in hours) user credit details and BOINC notices are updated"))
+        assert(_("How often (in hours) user credit totals and BOINC notices are updated. Can be between 1 and 8 hours."))
+        assert(_("Whether the number of the user's total BOINC credits are displayed in the panel"))
+        assert(_("Whether the number of BOINC credits earned today are displayed in the panel"))
 
         self.panel_applet.setup_menu(menu_xml, action_group)
 
