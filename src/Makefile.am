@@ -42,7 +42,8 @@ service_DATA     = $(service_in_files:.service.in=.service)
 
 imagedir	 = $(libexecdir)
 image_DATA	 = sahsl.png \
-		   sahsd.png
+		   sahsd.png \
+		   boinc.png
 
 #%.gschema.xml.in: %.gschema.xml.in.in Makefile
 #	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
@@ -52,7 +53,9 @@ gsettings_SCHEMAS = org.mate.panel.applet.BoincMonitor.gschema.xml
 @GSETTINGS_RULES@
 
 $(gsettings_SCHEMAS).in: $(gsettings_SCHEMAS).in.in Makefile
-	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' < $< > $@
+	$(AM_V_GEN)sed -e 's^\@GETTEXT_PACKAGE\@^$(GETTEXT_PACKAGE)^g' \
+ 		       -e "s|\@LOCATION\@|$(libexecdir)|" \
+		       < $< > $@
 
 org.mate.panel.applet.BoincMonitorAppletFactory.service: $(service_in_files)
 	$(AM_V_GEN)sed \

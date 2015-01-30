@@ -1,4 +1,4 @@
-AC_INIT([Boinc Applet], [0.71])
+AC_INIT([Boinc Applet], [0.72])
 
 AM_INIT_AUTOMAKE
 AM_PATH_PYTHON([3.0])

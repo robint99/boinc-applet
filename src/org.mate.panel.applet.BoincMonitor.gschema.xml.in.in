@@ -26,5 +26,10 @@
       <_summary>Whether the number of BOINC credits earned today are displayed in the panel</_summary>
       <_description></_description>
     </key>
+    <key type="s" name="panel-graphic">
+     <default>'@LOCATION@/boinc.png'</default>
+     <_summary>The image to display in the panel next to Boinc tasks</_summary>
+     <_description/>
+    </key>	
    </schema>
 </schemalist>

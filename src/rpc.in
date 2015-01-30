@@ -114,7 +114,6 @@ class Rpc(object):
             except socket.error:
                 raise
             n = buf.find(bytes(end, "utf-8"))
-            print (n)
             if not n == -1: break
             req += buf.decode ("utf-8") 
 
@@ -126,7 +125,6 @@ class Rpc(object):
         if text_output:
             return req
         else:
-            print (req)
             return ElementTree.fromstring(req)
 
 

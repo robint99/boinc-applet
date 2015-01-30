@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-01-21 14:10+0000\n"
-"PO-Revision-Date: 2015-01-21 14:13-0000\n"
+"POT-Creation-Date: 2015-01-29 19:37+0000\n"
+"PO-Revision-Date: 2015-01-29 19:38-0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: en_GB\n"
@@ -18,236 +18,247 @@ msgstr ""
 "X-Generator: Poedit 1.7.3\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/boinc_applet.in:127
-msgid "_Preferences"
-msgstr "_Preferences"
-
-#: src/boinc_applet.in:127 src/boinc_applet.in:135 src/prefs_win.in:54
-msgid "Preferences"
-msgstr "Preferences"
-
-#: src/boinc_applet.in:129 src/boinc_applet.in:130 src/boinc_applet.in:136
-msgid "Detailed client status..."
-msgstr "Detailed client status..."
-
-#: src/boinc_applet.in:132 src/boinc_applet.in:138
-msgid "About..."
-msgstr "About..."
-
-#: src/boinc_applet.in:143 src/about_win.in:52 src/about_win.in:69
+#: about_win.py:52 about_win.py:68 boinc_applet.py:158
 msgid "Boinc Monitor Applet"
 msgstr "Boinc Monitor Applet"
 
-#: src/boinc_applet.in:144
-msgid "An applet to monitor the BOINC client"
-msgstr "An applet to monitor the BOINC client"
-
-#: src/boinc_applet.in:147
-msgid "Number of tasks to show in the panel"
-msgstr "Number of tasks to show in the panel"
-
-#: src/boinc_applet.in:148
-msgid ""
-"Number of tasks whose completion status is displayed in the panel. Can be "
-"between 0 (no tasks are displayed) and 8."
-msgstr ""
-"Number of tasks whose completion status is displayed in the panel. Can be "
-"between 0 (no tasks are displayed) and 8."
-
-#: src/boinc_applet.in:149
-msgid "How often (in minutes) task details are updated"
-msgstr "How often (in minutes) task details are updated"
-
-#: src/boinc_applet.in:150
-msgid ""
-"How often (in minutes) the task details in the panel are updated. Can be "
-"between 1 and 60 minutes."
-msgstr ""
-"How often (in minutes) the task details in the panel are updated. Can be "
-"between 1 and 60 minutes."
-
-#: src/boinc_applet.in:151
-msgid "How often (in hours) user credit details and BOINC notices are updated"
-msgstr ""
-"How often (in hours) user credit details and BOINC notices are updated"
-
-#: src/boinc_applet.in:152
-msgid ""
-"How often (in hours) user credit totals and BOINC notices are updated. Can "
-"be between 1 and 8 hours."
-msgstr ""
-"How often (in hours) user credit totals and BOINC notices are updated. Can "
-"be between 1 and 8 hours."
-
-#: src/boinc_applet.in:153
-msgid ""
-"Whether the number of the user's total BOINC credits are displayed in the "
-"panel"
-msgstr ""
-"Whether the number of the user's total BOINC credits are displayed in the "
-"panel"
-
-#: src/boinc_applet.in:154
-msgid ""
-"Whether the number of BOINC credits earned today are displayed in the panel"
-msgstr ""
-"Whether the number of BOINC credits earned today are displayed in the panel"
-
-#: src/boinc_applet.in:175
-msgid "Boinc Monitor"
-msgstr "Boinc Monitor"
-
-#: src/boinc_applet.in:223
-msgid "Boinc Monitor - Boinc is not running"
-msgstr "Boinc Monitor - Boinc is not running"
-
-#: src/boinc_applet.in:228 src/boinc_applet.in:575
-msgid "Boinc client - not running"
-msgstr "Boinc client - not running"
-
-#: src/boinc_applet.in:247 src/boinc_applet.in:577
-msgid "Boinc client - running"
-msgstr "Boinc client - running"
-
-#: src/boinc_applet.in:343
-msgid "DC:"
-msgstr "DC:"
-
-#: src/boinc_applet.in:359
-msgid "TC:"
-msgstr "TC:"
-
-#: src/rpc.in:112
-msgid "No data from socket"
-msgstr "No data from socket"
-
-#: src/status_win.in:60 src/about_win.in:54
+#: about_win.py:54 status_win.py:60
 msgid "Close"
 msgstr "Close"
 
-#: src/status_win.in:93
-msgid "State"
-msgstr "State"
-
-#: src/status_win.in:99
-msgid "Complete"
-msgstr "Complete"
-
-#: src/status_win.in:105
-msgid "Project"
-msgstr "Project"
-
-#: src/status_win.in:111
-msgid "Task name"
-msgstr "Task name"
-
-#: src/status_win.in:125
-msgid "Tasks"
-msgstr "Tasks"
-
-#: src/status_win.in:135
-msgid "Date:"
-msgstr "Date:"
-
-#: src/status_win.in:155
-msgid "User credit today: "
-msgstr "User credit today: "
-
-#: src/status_win.in:166
-msgid "Host credit today: "
-msgstr "Host credit today: "
-
-#: src/status_win.in:184
-msgid "User Daily Avg: "
-msgstr "User Daily Avg: "
-
-#: src/status_win.in:195
-msgid "Host Daily Avg: "
-msgstr "Host Daily Avg: "
-
-#: src/status_win.in:213
-msgid "User total credit: "
-msgstr "User total credit: "
-
-#: src/status_win.in:224
-msgid "Host total credit: "
-msgstr "Host total credit: "
-
-#: src/status_win.in:236
-msgid "Statistics"
-msgstr "Statistics"
-
-#: src/status_win.in:247
-msgid "Notices"
-msgstr "Notices"
-
-#: src/status_win.in:279 src/boinc_client.in:143
-msgid "Running"
-msgstr "Running"
-
-#: src/status_win.in:308
-msgid "Received - "
-msgstr "Received - "
-
-#: src/status_win.in:342 src/boinc_client.in:145
-msgid "Stopped"
-msgstr "Stopped"
-
-#: src/boinc_client.in:155
-msgid "Unknown"
-msgstr "Unknown"
-
-#: src/prefs_win.in:60
-msgid "Cancel"
-msgstr "Cancel"
-
-#: src/prefs_win.in:71 src/prefs_win.in:74
-msgid "Display"
-msgstr "Display"
-
-#: src/prefs_win.in:79
-msgid "Number of tasks to display:"
-msgstr "Number of tasks to display:"
-
-#: src/prefs_win.in:98
-msgid "Display today's credit"
-msgstr "Display today's credit"
-
-#: src/prefs_win.in:103
-msgid "Display total credit"
-msgstr "Display total credit"
-
-#: src/prefs_win.in:114 src/prefs_win.in:118
-msgid "Updates"
-msgstr "Updates"
-
-#: src/prefs_win.in:123
-msgid "Task update interval (minutes):"
-msgstr "Task update interval (minutes):"
-
-#: src/prefs_win.in:145
-msgid "User credits/project notices update interval (hours):"
-msgstr "User credits/project notices update interval (hours):"
-
-#: src/about_win.in:72
+#: about_win.py:72
 msgid "An applet to monitor the progress of BOINC tasks."
 msgstr "An applet to monitor the progress of BOINC tasks."
 
-#: src/about_win.in:74
+#: about_win.py:74
 msgid "This program comes with ABSOLUTELY NO WARRENTY."
 msgstr "This program comes with ABSOLUTELY NO WARRENTY."
 
-#: src/about_win.in:77
+#: about_win.py:77
 msgid "See the"
 msgstr "See the"
 
-#: src/about_win.in:80
+#: about_win.py:80
 msgid "GNU General Public License, version 3 or later"
 msgstr "GNU General Public License, version 3 or later"
 
-#: src/about_win.in:81
+#: about_win.py:81
 msgid "for details"
 msgstr "for details"
+
+#: boinc_applet.py:142
+msgid "_Preferences"
+msgstr "_Preferences"
+
+#: boinc_applet.py:142 boinc_applet.py:150 prefs_win.py:54
+msgid "Preferences"
+msgstr "Preferences"
+
+#: boinc_applet.py:144 boinc_applet.py:145 boinc_applet.py:151
+msgid "Detailed client status..."
+msgstr "Detailed client status..."
+
+#: boinc_applet.py:147 boinc_applet.py:153
+msgid "About..."
+msgstr "About..."
+
+#: boinc_applet.py:159
+msgid "An applet to monitor the BOINC client"
+msgstr "An applet to monitor the BOINC client"
+
+#: boinc_applet.py:162
+msgid "Number of tasks to show in the panel"
+msgstr "Number of tasks to show in the panel"
+
+#: boinc_applet.py:163
+msgid ""
+"Number of tasks whose completion status is displayed in the panel. Can be "
+"between 0 (no tasks are displayed) and 8."
+msgstr ""
+"Number of tasks whose completion status is displayed in the panel. Can be "
+"between 0 (no tasks are displayed) and 8."
+
+#: boinc_applet.py:164
+msgid "How often (in minutes) task details are updated"
+msgstr "How often (in minutes) task details are updated"
+
+#: boinc_applet.py:165
+msgid ""
+"How often (in minutes) the task details in the panel are updated. Can be "
+"between 1 and 60 minutes."
+msgstr ""
+"How often (in minutes) the task details in the panel are updated. Can be "
+"between 1 and 60 minutes."
+
+#: boinc_applet.py:166
+msgid "How often (in hours) user credit details and BOINC notices are updated"
+msgstr "How often (in hours) user credit details and BOINC notices are updated"
+
+#: boinc_applet.py:167
+msgid ""
+"How often (in hours) user credit totals and BOINC notices are updated. Can "
+"be between 1 and 8 hours."
+msgstr ""
+"How often (in hours) user credit totals and BOINC notices are updated. Can "
+"be between 1 and 8 hours."
+
+#: boinc_applet.py:168
+msgid ""
+"Whether the number of the user's total BOINC credits are displayed in the "
+"panel"
+msgstr ""
+"Whether the number of the user's total BOINC credits are displayed in the "
+"panel"
+
+#: boinc_applet.py:169
+msgid ""
+"Whether the number of BOINC credits earned today are displayed in the panel"
+msgstr ""
+"Whether the number of BOINC credits earned today are displayed in the panel"
+
+#: boinc_applet.py:190
+msgid "Boinc Monitor"
+msgstr "Boinc Monitor"
+
+#: boinc_applet.py:238
+msgid "Boinc Monitor - Boinc is not running"
+msgstr "Boinc Monitor - Boinc is not running"
+
+#: boinc_applet.py:243 boinc_applet.py:615
+msgid "Boinc client - not running"
+msgstr "Boinc client - not running"
+
+#: boinc_applet.py:262 boinc_applet.py:617
+msgid "Boinc client - running"
+msgstr "Boinc client - running"
+
+#: boinc_applet.py:377
+msgid "DC:"
+msgstr "DC:"
+
+#: boinc_applet.py:393
+msgid "TC:"
+msgstr "TC:"
+
+#: boinc_client.py:143 status_win.py:279
+msgid "Running"
+msgstr "Running"
+
+#: boinc_client.py:145 status_win.py:342
+msgid "Stopped"
+msgstr "Stopped"
+
+#: boinc_client.py:155
+msgid "Unknown"
+msgstr "Unknown"
+
+#: prefs_win.py:60
+msgid "Cancel"
+msgstr "Cancel"
+
+#: prefs_win.py:71 prefs_win.py:74
+msgid "Display"
+msgstr "Display"
+
+#: prefs_win.py:79
+msgid "Number of tasks to display:"
+msgstr "Number of tasks to display:"
+
+#: prefs_win.py:98
+msgid "Display today's credit"
+msgstr "Display today's credit"
+
+#: prefs_win.py:103
+msgid "Display total credit"
+msgstr "Display total credit"
+
+#: prefs_win.py:114 prefs_win.py:118
+msgid "Updates"
+msgstr "Updates"
+
+#: prefs_win.py:123
+msgid "Task update interval (minutes):"
+msgstr "Task update interval (minutes):"
+
+#: prefs_win.py:145
+msgid "User credits/project notices update interval (hours):"
+msgstr "User credits/project notices update interval (hours):"
+
+#: prefs_win.py:172 prefs_win.py:176
+msgid "Panel graphic"
+msgstr "Panel graphic"
+
+#: prefs_win.py:180
+msgid "Graphic to display in the panel next to tasks:"
+msgstr "Graphic to display in the panel next to tasks:"
+
+#: prefs_win.py:186
+msgid "Select a graphic to show in the panel"
+msgstr "Select a graphic to show in the panel"
+
+#: rpc.py:112
+msgid "No data from socket"
+msgstr "No data from socket"
+
+#: status_win.py:93
+msgid "State"
+msgstr "State"
+
+#: status_win.py:99
+msgid "Complete"
+msgstr "Complete"
+
+#: status_win.py:105
+msgid "Project"
+msgstr "Project"
+
+#: status_win.py:111
+msgid "Task name"
+msgstr "Task name"
+
+#: status_win.py:125
+msgid "Tasks"
+msgstr "Tasks"
+
+#: status_win.py:135
+msgid "Date:"
+msgstr "Date:"
+
+#: status_win.py:155
+msgid "User credit today: "
+msgstr "User credit today: "
+
+#: status_win.py:166
+msgid "Host credit today: "
+msgstr "Host credit today: "
+
+#: status_win.py:184
+msgid "User Daily Avg: "
+msgstr "User Daily Avg: "
+
+#: status_win.py:195
+msgid "Host Daily Avg: "
+msgstr "Host Daily Avg: "
+
+#: status_win.py:213
+msgid "User total credit: "
+msgstr "User total credit: "
+
+#: status_win.py:224
+msgid "Host total credit: "
+msgstr "Host total credit: "
+
+#: status_win.py:236
+msgid "Statistics"
+msgstr "Statistics"
+
+#: status_win.py:247
+msgid "Notices"
+msgstr "Notices"
+
+#: status_win.py:308
+msgid "Received - "
+msgstr "Received - "
 
 #~ msgid "This is a test translation"
 #~ msgstr "This is a test translation"

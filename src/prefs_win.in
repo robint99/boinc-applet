@@ -34,7 +34,7 @@ sys.path.insert(1, '@pythondir@')
 
 import gi
 gi.require_version("Gtk", "2.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GdkPixbuf
 
 class PrefsWindow(Gtk.Window):
 
@@ -169,8 +169,50 @@ class PrefsWindow(Gtk.Window):
         self.__frame_updates_align.add(self.__table_updates)
         self.__frame_updates.add(self.__frame_updates_align)
 
+        frame_title = _("Panel graphic")
+        self.__frame_graphic = Gtk.Frame(label=frame_title)
+        lbl = self.__frame_graphic.get_label_widget()
+        lbl.set_use_markup(True)
+        lbl.set_label("<b>" + _("Panel graphic")+ "</b>")
+
+        self.__frame_graphic.set_shadow_type(Gtk.ShadowType.NONE)
+        self.__table_graphic = Gtk.Table(rows=2, columns=3, homogeneous=False)
+        self.__lbl_graphic = Gtk.Label(_("Graphic to display in the panel next to tasks:"))
+        self.__table_graphic.attach(self.__lbl_graphic, 0, 1, 0, 1,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__lbl_graphic.set_alignment(0.03, 0.5)
+
+        self.__fcb_graphic = Gtk.FileChooserButton(_("Select a graphic to show in the panel"))
+        self.__table_graphic.attach(self.__fcb_graphic, 0, 1, 1, 2,
+                                    Gtk.AttachOptions.FILL, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__fcb_graphic.connect("file-set", self.panel_graphic_change)
+
+        self.__ff_graphic = Gtk.FileFilter()
+        self.__ff_graphic.set_name("Image files")
+        self.__ff_graphic.add_pixbuf_formats()
+        self.__fcb_graphic.add_filter(self.__ff_graphic)
+
+        self.__lbl_filler = Gtk.Label(" : ")
+        self.__table_graphic.attach(self.__lbl_filler, 1, 2, 1, 2,
+                                    Gtk.AttachOptions.FILL,
+                                    Gtk.AttachOptions.FILL,
+                                    2, 2)
+
+        self.__img_panel = Gtk.Image()
+        self.__table_graphic.attach(self.__img_panel, 2, 3, 1, 2,
+                                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                                    2, 2)
+        self.__frame_graphic_align = Gtk.Alignment(xalign=0.5, yalign=1.0,
+                                                   xscale=1.0, yscale=1.0)
+        self.__frame_graphic_align.set_padding(0, 0, 12, 0)
+        self.__frame_graphic_align.add(self.__table_graphic)
+        self.__frame_graphic.add(self.__frame_graphic_align)
+
         self.__vbox.pack_start(self.__frame_display, True, True, 4)
         self.__vbox.pack_start(self.__frame_updates, True, True, 4)
+        self.__vbox.pack_start(self.__frame_graphic, True, True, 4)
         self.__vbox.pack_start(self.__hbbx, False, False, 0)
 
         self.connect("delete-event", self.win_delete_event)
@@ -178,6 +220,20 @@ class PrefsWindow(Gtk.Window):
         self.__spinbtn_tasks.set_value(2)
 
         self.add(self.__vbox)
+
+    def load_panel_graphic(self):
+        """
+        loads the panel graphic and scales it to 24x24 px for display in this window
+        """
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.__fcb_graphic.get_filename())
+        pixbuf = pixbuf.scale_simple(24, 24, GdkPixbuf.InterpType.BILINEAR)
+        self.__img_panel.set_from_pixbuf(pixbuf)
+
+    def panel_graphic_change(self, filechooserbutton):
+        """
+        callback activated when the user selects a new panel graphic
+        """
+        self.load_panel_graphic()
 
     def win_delete_event(self, widget, event, data=None):
         """
@@ -268,6 +324,20 @@ class PrefsWindow(Gtk.Window):
 
     lp_interval = property(get_lp_interval, set_lp_interval)
 
+    def get_graphic_filename(self):
+        """
+        get the filename of the graphic to display in the panel next to tasks
+        """
+        return self.__fcb_graphic.get_filename()
+
+    def set_graphic_filename(self, value):
+        """
+        set the filename of the graphic to display in the panel next to tasks
+        """
+        self.__fcb_graphic.set_filename(value)
+        self.load_panel_graphic()
+
+    graphic_filename = property(get_graphic_filename, set_graphic_filename)
 
 def main():
     """

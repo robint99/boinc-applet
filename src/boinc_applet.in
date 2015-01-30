@@ -37,15 +37,30 @@ Author:
 """
 
 import gettext
-trans = gettext.translation("boinc-applet","@localedir@")
-trans.install()
+import errno
+
+try:
+    # use a translation if one is available
+    trans = gettext.translation("boinc-applet", "@localedir@")
+    trans.install()
+
+except OSError as e:
+    # a file not found error indicates that there is no translation, so we can
+    # just use the english language version instead as this will always be
+    # installed
+
+    if e.errno == errno.ENOENT:
+        en_lang = gettext.translation("boinc-applet", "@localedir@", languages=['en'])
+        en_lang.install()
+    else:
+        raise()
 
 import sys
 sys.path.insert(1, '@pythondir@')
 
 import gi
 gi.require_version("Gtk", "2.0")
-from gi.repository import Gtk, MatePanelApplet, GObject, Gio
+from gi.repository import Gtk, MatePanelApplet, GObject, Gio, GdkPixbuf
 import time
 import boinc_client
 import about_win
@@ -138,20 +153,21 @@ class BoincApplet(object):
         menu_xml += _("About...") + '" action="about_action"/><separator/>'
 
         # specify the applet name and description here so that they can be detected by
-        # xgettext and included in the .pot file for translation - needs to match 
+        # ext and included in the .pot file for translation - needs to match
         # what's in the .mate.panel.applet.in.in file
-        assert(_("Boinc Monitor Applet"))
-        assert(_("An applet to monitor the BOINC client"))
+        assert _("Boinc Monitor Applet")
+        assert _("An applet to monitor the BOINC client")
 
         #ditto, except that this is for the translatable text in the gschema file
-        assert(_("Number of tasks to show in the panel"))
-        assert(_("Number of tasks whose completion status is displayed in the panel. Can be between 0 (no tasks are displayed) and 8."))
-        assert(_("How often (in minutes) task details are updated"))
-        assert(_("How often (in minutes) the task details in the panel are updated. Can be between 1 and 60 minutes."))
-        assert(_("How often (in hours) user credit details and BOINC notices are updated"))
-        assert(_("How often (in hours) user credit totals and BOINC notices are updated. Can be between 1 and 8 hours."))
-        assert(_("Whether the number of the user's total BOINC credits are displayed in the panel"))
-        assert(_("Whether the number of BOINC credits earned today are displayed in the panel"))
+        assert _("Number of tasks to show in the panel")
+        assert _("Number of tasks whose completion status is displayed in the panel. Can be between 0 (no tasks are displayed) and 8.")
+        assert _("How often (in minutes) task details are updated")
+        assert _("How often (in minutes) the task details in the panel are updated. Can be between 1 and 60 minutes.")
+        assert _("How often (in hours) user credit details and BOINC notices are updated")
+        assert _("How often (in hours) user credit totals and BOINC notices are updated. Can be between 1 and 8 hours.")
+        assert _("Whether the number of the user's total BOINC credits are displayed in the panel")
+        assert _("Whether the number of BOINC credits earned today are displayed in the panel")
+        assert _("The image to display in the panel next to Boinc tasks")
 
         self.panel_applet.setup_menu(menu_xml, action_group)
 
@@ -313,11 +329,33 @@ class BoincApplet(object):
 
         num_tasks = self.settings.get_int("tasks-to-display")
 
+        # work out the panel height so that task images can be resized accordingly
+        # note - if the panel is arranged vertically assume a heigh of 24 pixels
+        if add_spacers:    # i.e. a top or bottom panel
+            panel_height = self.panel_applet.get_size()
+        else:
+            panel_height = 24
+
         # add widgets to display task status
         for i in range(0, num_tasks):
 
+            ## load the image and resize so that it fits the panel height
+            ## default to the supplied png if the specified file can't
+            ## be found
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.settings.get_string("panel-graphic"))
+            except OSError as e:
+                if e.errno == errno.ENOENT:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file("@LOCATION@/boinc.png")
+                else:
+                    raise()
+
+            rescale_factor = panel_height / pixbuf.get_height()
+
+            pixbuf = pixbuf.scale_simple(panel_height, pixbuf.get_width() * rescale_factor,
+                                         GdkPixbuf.InterpType.BILINEAR)
             image = Gtk.Image()
-            image.set_from_file("@LOCATION@/sahsl.png")
+            image.set_from_pixbuf(pixbuf)
             self.task_images.append(image)
 
             self.panel_box.pack_start(image, False, False, 0)
@@ -504,12 +542,17 @@ class BoincApplet(object):
                               (self.settings.get_boolean("show-total-uc") != \
                               self.prefswin.show_total_uc)
 
+        panel_items_changed = panel_items_changed or \
+                              (self.settings.get_string("panel-graphic") != \
+                              self.prefswin.graphic_filename)
+
         # write the new settings
         self.settings.set_int("tasks-to-display", self.prefswin.num_tasks)
         self.settings.set_boolean("show-total-uc", self.prefswin.show_total_uc)
         self.settings.set_boolean("show-today-uc", self.prefswin.show_today_uc)
         self.settings.set_int("task-update-interval", self.prefswin.task_interval)
         self.settings.set_int("sundries-update-interval", self.prefswin.lp_interval)
+        self.settings.set_string("panel-graphic", self.prefswin.graphic_filename)
 
         # if the update intervals have changed then we need to delete the old timers
         # and add new ones
@@ -551,6 +594,7 @@ class BoincApplet(object):
             self.prefswin.show_today_uc = self.settings.get_boolean("show-today-uc")
             self.prefswin.task_interval = self.settings.get_int("task-update-interval")
             self.prefswin.lp_interval = self.settings.get_int("sundries-update-interval")
+            self.prefswin.graphic_filename = self.settings.get_string("panel-graphic")
 
             self.prefswin.show_all()
 
